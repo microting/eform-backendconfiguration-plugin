@@ -106,7 +106,7 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 ///     stale.</description></item>
 /// </list>
 /// </summary>
-public class EventsGrpcService(
+public partial class EventsGrpcService(
     IBackendConfigurationCalendarService calendarService,
     IBackendConfigurationPropertiesService propertiesService,
     IBackendConfigurationUserPropertyAccess userPropertyAccess,
@@ -280,6 +280,7 @@ public class EventsGrpcService(
             deliverable.Add(task);
         }
 
+        var decorated = new List<(Event, CalendarTaskResponseModel)>(deliverable.Count);
         foreach (var task in deliverable)
         {
             if (!task.Status) continue;
@@ -325,7 +326,11 @@ public class EventsGrpcService(
                 .ConfigureAwait(false);
 
             response.Events.Add(evt);
+            decorated.Add((evt, task));
         }
+
+        // contract_version 1: due fields, version, etag (additive).
+        await DecorateReadEventsAsync(decorated).ConfigureAwait(false);
 
         return response;
     }
@@ -381,6 +386,7 @@ public class EventsGrpcService(
         var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
             .ConfigureAwait(false);
 
+        var decorated = new List<(Event, CalendarTaskResponseModel)>(result.Model.Count);
         foreach (var task in result.Model)
         {
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
@@ -420,7 +426,11 @@ public class EventsGrpcService(
                 .ConfigureAwait(false);
 
             response.Events.Add(evt);
+            decorated.Add((evt, task));
         }
+
+        // contract_version 1: due fields, version, etag (additive).
+        await DecorateReadEventsAsync(decorated).ConfigureAwait(false);
 
         return response;
     }
@@ -498,7 +508,8 @@ public class EventsGrpcService(
     /// nesting depth.
     /// </summary>
     private async Task<Dictionary<int, List<FormField>>> LoadFieldsByTaskIdAsync(
-        IReadOnlyCollection<CalendarTaskResponseModel> tasks)
+        IReadOnlyCollection<CalendarTaskResponseModel> tasks,
+        bool failOnReadError = false)
     {
         var taskIdToCaseId = tasks
             .Where(t => t.SdkCaseId is > 0)
@@ -529,6 +540,18 @@ public class EventsGrpcService(
                 var theCase = await core.CaseRead(caseId, language).ConfigureAwait(false);
                 if (theCase?.ElementList == null)
                 {
+                    if (failOnReadError
+                        && await CaseRowExistsOrUnavailableAsync(sdkDbContext, caseId).ConfigureAwait(false))
+                    {
+                        // contract_version 1, GetEvent only. Core.CaseRead
+                        // swallows its own exceptions and returns null, so
+                        // "the case exists but could not be read" is a read
+                        // FAILURE, not the create->deploy window (no case
+                        // row yet), which keeps answering not-found.
+                        throw new RpcException(new Status(StatusCode.Unavailable,
+                            "The event's form could not be read right now; retry."));
+                    }
+
                     continue;
                 }
 
@@ -539,11 +562,19 @@ public class EventsGrpcService(
                 }
                 result[taskId] = fields;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not RpcException)
             {
                 logger.LogWarning(ex,
                     "EventsGrpcService.LoadFieldsByTaskIdAsync: failed to load FormField for task {TaskId} (SdkCaseId={CaseId})",
                     taskId, caseId);
+                if (failOnReadError)
+                {
+                    // contract_version 1, GetEvent only: a failed read is not
+                    // an incomplete template; the client must retry rather
+                    // than conclude the occurrence is gone.
+                    throw new RpcException(new Status(StatusCode.Unavailable,
+                        "The event's form could not be read right now; retry."));
+                }
             }
         }
 
@@ -881,7 +912,9 @@ public class EventsGrpcService(
         {
             var (initialStart, initialEnd) = ComputeWatchWindow();
             var initial = await LoadEventsAsync(
-                propertyId, boardFilter, initialStart, initialEnd, sdkSiteId, ct).ConfigureAwait(false);
+                propertyId, boardFilter, initialStart, initialEnd, sdkSiteId, ct, stampVersions: false)
+                .ConfigureAwait(false);
+            await StampEventsToSendAsync(initial).ConfigureAwait(false);
             foreach (var op in initial)
             {
                 ct.ThrowIfCancellationRequested();
@@ -950,9 +983,11 @@ public class EventsGrpcService(
                 }
 
                 var current = await LoadEventsAsync(
-                    propertyId, boardFilter, windowStart, windowEnd, sdkSiteId, ct).ConfigureAwait(false);
+                    propertyId, boardFilter, windowStart, windowEnd, sdkSiteId, ct, stampVersions: false)
+                    .ConfigureAwait(false);
 
                 var currentKeys = new HashSet<(string EventId, string PlanDayKey)>();
+                var changed = new List<(Event Op, (string EventId, string PlanDayKey) Key, string Hash)>();
 
                 foreach (var op in current)
                 {
@@ -962,11 +997,18 @@ public class EventsGrpcService(
                     var hash = ComputeStateHash(op);
                     if (!seen.TryGetValue(seenKey, out var prevHash) || prevHash != hash)
                     {
-                        ct.ThrowIfCancellationRequested();
-                        await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
-                            .ConfigureAwait(false);
-                        seen[seenKey] = hash;
+                        changed.Add((op, seenKey, hash));
                     }
+                }
+
+                // contract_version 1: version + etag only for what is sent.
+                await StampEventsToSendAsync(changed.Select(c => c.Op).ToList()).ConfigureAwait(false);
+                foreach (var (op, seenKey, hash) in changed)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    await responseStream.WriteAsync(new EventChange { Upserted = op }, ct)
+                        .ConfigureAwait(false);
+                    seen[seenKey] = hash;
                 }
 
                 // Whole-event delete → RemovedId; partial → RemovedOccurrence per missing rotation.
@@ -1069,7 +1111,8 @@ public class EventsGrpcService(
         DateTime windowStart,
         DateTime windowEnd,
         int sdkSiteId,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        bool stampVersions = true)
     {
         var model = new CalendarTaskRequestModel
         {
@@ -1087,25 +1130,41 @@ public class EventsGrpcService(
         };
 
         var result = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
-        var output = new List<Event>();
 
         if (!result.Success || result.Model == null)
         {
-            return output;
+            return [];
         }
 
-        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
+        return await BuildEventsFromCalendarRowsAsync(result.Model, ct, stampVersions).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The hydration half of <see cref="LoadEventsAsync"/> (envelope, fields,
+    /// completeness filter, attachments, due / version / etag) over calendar
+    /// rows already read. <c>GetEvent</c> calls it with the single row it
+    /// selected, so it hydrates nothing else.
+    /// </summary>
+    private async Task<List<Event>> BuildEventsFromCalendarRowsAsync(
+        IReadOnlyCollection<CalendarTaskResponseModel> rows,
+        CancellationToken ct,
+        bool stampVersions,
+        bool failOnReadError = false)
+    {
+        var output = new List<Event>();
+
+        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(rows)
             .ConfigureAwait(false);
 
-        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
+        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(rows, failOnReadError)
             .ConfigureAwait(false);
 
         // Completeness filter: drop in-flight tasks whose eForm template
         // structure has not yet materialised. See ListEvents for rationale —
         // this is the stream-poll path, identical semantics required so the
         // client never sees a half-built event over either RPC.
-        var deliverable = new List<CalendarTaskResponseModel>(result.Model.Count);
-        foreach (var task in result.Model)
+        var deliverable = new List<CalendarTaskResponseModel>(rows.Count);
+        foreach (var task in rows)
         {
             if (task.EformId is > 0 && !fieldsByTaskId.ContainsKey(task.Id))
             {
@@ -1117,6 +1176,7 @@ public class EventsGrpcService(
             deliverable.Add(task);
         }
 
+        var decorated = new List<(Event, CalendarTaskResponseModel)>(deliverable.Count);
         foreach (var task in deliverable)
         {
             if (!task.Status) continue;
@@ -1154,6 +1214,20 @@ public class EventsGrpcService(
                 .ConfigureAwait(false);
 
             output.Add(evt);
+            decorated.Add((evt, task));
+        }
+
+        // contract_version 1: due fields, version, etag (additive). The
+        // stream passes stampVersions=false and stamps only what it sends
+        // (StampEventsToSendAsync), so an unchanged poll costs no version
+        // queries; its change hash ignores version/etag (ComputeStateHash).
+        if (stampVersions)
+        {
+            await DecorateReadEventsAsync(decorated).ConfigureAwait(false);
+        }
+        else
+        {
+            await ApplyDueFieldsAsync(decorated).ConfigureAwait(false);
         }
 
         return output;
@@ -1173,8 +1247,10 @@ public class EventsGrpcService(
     /// </summary>
     private static string ComputeStateHash(Event op)
     {
-        var bytes = SHA256.HashData(op.ToByteArray());
-        return Convert.ToBase64String(bytes);
+        // Same value as Event.etag: the content hash WITHOUT version/etag, so
+        // a version that moves while the content stays put (an UpdatedAt bump
+        // with no visible change) never re-sends the event.
+        return ComputeEtag(op);
     }
 
     public override async Task<CompleteEventResponse> CompleteEvent(
@@ -1195,6 +1271,10 @@ public class EventsGrpcService(
             request.ComplianceId, request.MicrotingSdkCaseId,
             request.DoneAtUserModifiable, request.ClientTsUnix);
 
+        // contract_version 1: "" for every legacy request, which keeps every
+        // branch below on exactly its pre-contract behaviour.
+        var requestId = NormalizeRequestId(request.RequestId);
+
         // Idempotent re-tap path. The flutter UI sends `!o.completed` when a
         // worker re-taps a row, so a row whose local state already says
         // "completed" arrives here as Completed=false. There is nothing to
@@ -1206,8 +1286,17 @@ public class EventsGrpcService(
         // because StatusCode.Unimplemented is not in its permanent-error set.
         if (!request.Completed)
         {
-            return await BuildIdempotentCompleteEventResponse(eventId, request, context)
+            var (idempotent, resolvedCompliance) = await BuildIdempotentCompleteEventResponse(eventId, request, context)
                 .ConfigureAwait(false);
+            if (requestId.Length > 0)
+            {
+                // Stamp only from the compliance the helper resolved inside the
+                // caller's authorised planning (never the raw request ids).
+                await StampWriteReplyAsync(idempotent.Event,
+                    resolvedCompliance?.Id ?? 0, resolvedCompliance?.MicrotingSdkCaseId ?? 0, null)
+                    .ConfigureAwait(false);
+            }
+            return idempotent;
         }
 
         // Look up the AreaRulePlanning to learn its property + ItemPlanningId.
@@ -1251,6 +1340,32 @@ public class EventsGrpcService(
         // planning 3632, site 130 vs 142).
         var coreForCompliance = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContextForCompliance = coreForCompliance.DbContextHelper.GetDbContext();
+
+        if (requestId.Length > 0)
+        {
+            // contract_version 1: look for this request's own record BEFORE
+            // any live lookup. Without it, a retry carrying compliance_id = 0
+            // would reach the legacy "earliest live occurrence" fallback after
+            // the first delivery claimed its occurrence, and complete the NEXT
+            // rotation. A request naming neither id has no usable identity
+            // and keeps today's semantics.
+            var (ownReplay, ownInFlight) = await ProbeOwnCompletionAsync(
+                    request, requestId, arp.ItemPlanningId, arp.PropertyId, eventId, sdkSiteId,
+                    sdkDbContextForCompliance, context.CancellationToken)
+                .ConfigureAwait(false);
+            if (ownReplay != null)
+            {
+                return ownReplay;
+            }
+
+            if (ownInFlight)
+            {
+                return await ResolveClaimedOccurrenceForRequestIdAsync(
+                        null, waitForWinner: true, request, requestId, arp.ItemPlanningId, arp.PropertyId,
+                        eventId, sdkSiteId, sdkDbContextForCompliance, context.CancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
         Compliance? compliance;
         if (request.ComplianceId > 0)
         {
@@ -1259,6 +1374,16 @@ public class EventsGrpcService(
                 .Where(x => x.Id == (int)request.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id completion that names its SDK
+            // case acts on THAT case only (live, on this planning and the
+            // caller's site), never on another occurrence.
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: true,
+                    sdkDbContextForCompliance, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -1319,16 +1444,34 @@ public class EventsGrpcService(
             // WorkflowState filter. It still points at the winner's SDK case, which
             // is where the identity lives - Compliance itself has no completed-by or
             // completed-at column.
-            var settled = await dbContext.Compliances
-                .Where(x => x.Id == (int)request.ComplianceId)
-                .Where(x => x.PlanningId == arp.ItemPlanningId)
-                .FirstOrDefaultAsync()
-                .ConfigureAwait(false);
+            var settled = NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId)
+                ? await FindComplianceForNamedCaseAsync(
+                        request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                        sdkDbContextForCompliance, context.CancellationToken)
+                    .ConfigureAwait(false)
+                : await dbContext.Compliances
+                    .Where(x => x.Id == (int)request.ComplianceId)
+                    .Where(x => x.PlanningId == arp.ItemPlanningId)
+                    .FirstOrDefaultAsync()
+                    .ConfigureAwait(false);
 
             // Arrived late: the winner had already committed before this
             // caller's lookup even ran. If the request carried answers, they
             // are discarded here too — flag it so the worker is told, instead
             // of the app silently treating this as a clean success.
+            if (requestId.Length > 0)
+            {
+                // contract_version 1: the worker's own retry of a completion
+                // that was applied (e.g. the response was lost to the app's
+                // 30 s deadline) is answered as a success, not as "already
+                // completed by you; answers discarded" + a Sentry error. A
+                // different request keeps the answer below.
+                return await ResolveClaimedOccurrenceForRequestIdAsync(
+                        settled, LooksLikeClaimInFlight(settled), request, requestId, arp.ItemPlanningId,
+                        arp.PropertyId, eventId, sdkSiteId, sdkDbContextForCompliance, context.CancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             return await AlreadyCompletedWithDiscardTrackingAsync(
                     settled, eventId, sdkDbContextForCompliance, request, sdkSiteId)
                 .ConfigureAwait(false);
@@ -1430,6 +1573,16 @@ public class EventsGrpcService(
 
         // Claim the shared occurrence before anything downstream is touched.
         var wonTheRace = await TryClaimOccurrenceAsync(compliance.Id).ConfigureAwait(false);
+
+        if (!wonTheRace && requestId.Length > 0)
+        {
+            // contract_version 1: wait (bounded) for the winner's case update,
+            // then replay / already-completed / ABORTED (retryable).
+            return await ResolveClaimedOccurrenceForRequestIdAsync(
+                    compliance, waitForWinner: true, request, requestId, arp.ItemPlanningId, arp.PropertyId, eventId, sdkSiteId,
+                    sdkDbContext, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
 
         if (!wonTheRace)
         {
@@ -1560,6 +1713,13 @@ public class EventsGrpcService(
             // this is the inverse (un-soft-delete) and is the only place in
             // this service that writes WorkflowState directly.
             foundCase.WorkflowState = Constants.WorkflowStates.Created;
+            if (requestId.Length > 0)
+            {
+                // contract_version 1, phase 1: "this request is completing"
+                // in the SAME update that sets Status = 100. The replay marker
+                // is published only after the bundled answers (below).
+                StampCompletionInFlight(foundCase, requestId);
+            }
             await foundCase.Update(sdkDbContext).ConfigureAwait(false);
 
             // Broadcast the case update to any registered subscribers. Mirrors
@@ -1716,6 +1876,13 @@ public class EventsGrpcService(
                 await foundCase.Update(sdkDbContext).ConfigureAwait(false);
             }
 
+            if (requestId.Length > 0)
+            {
+                // contract_version 1, phase 2: the case update and the bundled
+                // answers succeeded, so a repeat may now be answered as replayed.
+                await PublishCompletionAppliedAsync(sdkDbContext, foundCase, requestId).ConfigureAwait(false);
+            }
+
             // Mirror the post-update sequence from
             // BackendConfigurationCompliancesService.Update (lines 307-335):
             // set Status=100 on PlanningCaseSite + parent PlanningCase so the
@@ -1856,9 +2023,33 @@ public class EventsGrpcService(
         // so it will fall out of the recurrence/compliance branches — we look
         // it up by ARP id and synthesize a minimal mapping if it's gone).
         var dayKey = dayDoneAt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var (evt, echoTask) = await BuildCompletionEchoAsync(
+                arp.PropertyId, eventId, dayKey, sdkSiteId, request.CompletedBy, context.CancellationToken)
+            .ConfigureAwait(false);
+
+        if (requestId.Length > 0)
+        {
+            await StampWriteReplyAsync(evt, compliance.Id, compliance.MicrotingSdkCaseId, echoTask)
+                .ConfigureAwait(false);
+        }
+
+        return new CompleteEventResponse { Event = evt };
+    }
+
+    /// <summary>
+    /// The Event a completion answers with: the day re-read through the
+    /// calendar (scoped to the caller's site) with envelope, fields and
+    /// attachments, or a synthesised minimal completed Event when the
+    /// occurrence no longer surfaces. Shared by the success path and the
+    /// contract-version-1 replay of an applied request id. Also returns the
+    /// calendar row it was built from (null for the synthesised Event).
+    /// </summary>
+    private async Task<(Event Evt, CalendarTaskResponseModel Task)> BuildCompletionEchoAsync(
+        int propertyId, int eventId, string dayKey, int sdkSiteId, string completedBy, CancellationToken ct)
+    {
         var refreshed = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
         {
-            PropertyId = arp.PropertyId,
+            PropertyId = propertyId,
             WeekStart = dayKey,
             WeekEnd = dayKey,
             BoardIds = [],
@@ -1904,7 +2095,7 @@ public class EventsGrpcService(
                 TaskText = refreshedTask.Title ?? string.Empty,
                 CalendarColor = refreshedTask.Color ?? string.Empty,
                 Completed = true,
-                CompletedBy = request.CompletedBy ?? string.Empty,
+                CompletedBy = completedBy ?? string.Empty,
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
                 Comment = comment,
                 EformId = refreshedTask.EformId ?? 0,
@@ -1918,7 +2109,7 @@ public class EventsGrpcService(
                 evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, ct)
                 .ConfigureAwait(false);
         }
         else
@@ -1931,23 +2122,23 @@ public class EventsGrpcService(
             evt = new Event
             {
                 Id = eventId.ToString(CultureInfo.InvariantCulture),
-                PropertyId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = propertyId.ToString(CultureInfo.InvariantCulture),
                 BoardId = string.Empty,
                 PlanDayKey = dayKey,
                 PlannedAt = string.Empty,
                 TaskText = string.Empty,
                 CalendarColor = string.Empty,
                 Completed = true,
-                CompletedBy = request.CompletedBy ?? string.Empty,
+                CompletedBy = completedBy ?? string.Empty,
                 DescriptionHtml = string.Empty,
                 Comment = string.Empty
             };
 
-            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, ct)
                 .ConfigureAwait(false);
         }
 
-        return new CompleteEventResponse { Event = evt };
+        return (evt, refreshedTask);
     }
 
     /// <summary>
@@ -2265,7 +2456,9 @@ public class EventsGrpcService(
     /// sends <c>completed=false</c>. This happens when the flutter UI re-taps
     /// an already-completed row (it sends <c>!o.completed</c>). Returns the
     /// current authoritative state so the client can reconcile its optimistic
-    /// flip; performs NO database writes.
+    /// flip; performs NO database writes. Also returns the Compliance it
+    /// resolved (scoped to the ARP's planning; null when none), the only ids
+    /// a contract-version-1 version stamp may use.
     /// <para>
     /// Three observable outcomes:
     /// </para>
@@ -2282,7 +2475,7 @@ public class EventsGrpcService(
     ///     calendar query says about that row today. No DB writes.</description></item>
     /// </list>
     /// </summary>
-    private async Task<CompleteEventResponse> BuildIdempotentCompleteEventResponse(
+    private async Task<(CompleteEventResponse Response, Compliance Resolved)> BuildIdempotentCompleteEventResponse(
         int eventId, CompleteEventRequest request, ServerCallContext context)
     {
         var arp = await dbContext.AreaRulePlannings
@@ -2321,6 +2514,15 @@ public class EventsGrpcService(
                 .Where(x => x.Id == (int)request.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(NormalizeRequestId(request.RequestId), request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: true,
+                    sdkDbContextForCompliance, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -2371,7 +2573,7 @@ public class EventsGrpcService(
             await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
                 .ConfigureAwait(false);
 
-            return new CompleteEventResponse { Event = evt };
+            return (new CompleteEventResponse { Event = evt }, compliance);
         }
 
         // Compliance still alive — anomaly: a still-actionable row is being
@@ -2468,7 +2670,7 @@ public class EventsGrpcService(
                 .ConfigureAwait(false);
         }
 
-        return new CompleteEventResponse { Event = evt };
+        return (new CompleteEventResponse { Event = evt }, compliance);
     }
 
     /// <summary>
@@ -2549,6 +2751,8 @@ public class EventsGrpcService(
         }
 
         var eventId = ParseEventId(request.EventId);
+        // contract_version 1: "" for legacy requests (unchanged behaviour).
+        var requestId = NormalizeRequestId(request.RequestId);
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
@@ -2606,6 +2810,15 @@ public class EventsGrpcService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
         }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                    sdkDbContextForCompliance, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
         else
         {
             // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
@@ -2632,10 +2845,12 @@ public class EventsGrpcService(
         // matches CompleteEvent's behaviour for the same edge case.
         if (compliance == null)
         {
-            return new SetCommentResponse
+            var orphanEvent = SynthesiseMinimalEvent(eventId, arp.PropertyId, commentAtUtc, trimmed);
+            if (requestId.Length > 0)
             {
-                Event = SynthesiseMinimalEvent(eventId, arp.PropertyId, commentAtUtc, trimmed)
-            };
+                await StampWriteReplyAsync(orphanEvent, 0, 0, null).ConfigureAwait(false);
+            }
+            return new SetCommentResponse { Event = orphanEvent };
         }
 
         // Reuse the core/sdkDbContext already obtained for the compliance lookup above.
@@ -2660,17 +2875,31 @@ public class EventsGrpcService(
         // envelope back to "" so the legacy CompliancesGrpcService.
         // ReadComplianceCase passthrough sees an empty string instead of
         // "{...}".
-        var existingEnvelope = TryParseEnvelope(foundCase.Custom);
-        var nextEnvelope = existingEnvelope ?? new EventCustomEnvelope();
-        nextEnvelope.EventComment = string.IsNullOrEmpty(trimmed)
-            ? null
-            : new EventCommentBody
-            {
-                Text = trimmed,
-                TsUnix = ToUnixSeconds(commentAtUtc)
-            };
-        foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
-        await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+        var replayed = false;
+        var echoComment = trimmed;
+        if (requestId.Length == 0)
+        {
+            var existingEnvelope = TryParseEnvelope(foundCase.Custom);
+            var nextEnvelope = existingEnvelope ?? new EventCustomEnvelope();
+            nextEnvelope.EventComment = string.IsNullOrEmpty(trimmed)
+                ? null
+                : new EventCommentBody
+                {
+                    Text = trimmed,
+                    TsUnix = ToUnixSeconds(commentAtUtc)
+                };
+            foundCase.Custom = SerializeEnvelopeOrEmpty(nextEnvelope);
+            await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+        }
+        else
+        {
+            // contract_version 1: same write, under the occurrence lock, with
+            // the request id recorded; a repeat writes nothing and echoes the
+            // comment that is stored now.
+            (replayed, echoComment) = await ApplyCommentWithRequestIdAsync(
+                    compliance.Id, sdkDbContext, foundCase, trimmed, commentAtUtc, requestId)
+                .ConfigureAwait(false);
+        }
 
         // Refresh the event for the day in question so the response shape
         // matches CompleteEvent (same synthesise-on-miss fallback).
@@ -2714,7 +2943,7 @@ public class EventsGrpcService(
                 Completed = refreshedTask.Completed,
                 CompletedBy = string.Empty,
                 DescriptionHtml = refreshedTask.DescriptionHtml ?? string.Empty,
-                Comment = trimmed
+                Comment = echoComment
             };
 
             await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
@@ -2722,11 +2951,21 @@ public class EventsGrpcService(
         }
         else
         {
-            evt = SynthesiseMinimalEvent(eventId, arp.PropertyId, commentAtUtc, trimmed);
+            evt = SynthesiseMinimalEvent(eventId, arp.PropertyId, commentAtUtc, echoComment);
             // No attachments for synthesized minimal Event — it's for orphaned tasks with no planning.
         }
 
-        return new SetCommentResponse { Event = evt };
+        if (requestId.Length > 0)
+        {
+            // contract_version 1, request-id callers only: the real ids (they
+            // stay 0 for old apps, whose replies must not change).
+            evt.ComplianceId = compliance.Id;
+            evt.MicrotingSdkCaseId = compliance.MicrotingSdkCaseId;
+            await StampWriteReplyAsync(evt, compliance.Id, compliance.MicrotingSdkCaseId, refreshedTask)
+                .ConfigureAwait(false);
+        }
+
+        return new SetCommentResponse { Event = evt, Replayed = replayed };
     }
 
     /// <summary>
@@ -2800,6 +3039,8 @@ public class EventsGrpcService(
         }
 
         var meta = firstChunk.Meta;
+        // contract_version 1: "" for legacy requests (unchanged behaviour).
+        var requestId = NormalizeRequestId(meta.RequestId);
 
         // 2. Validate metadata up front so we don't waste the upload.
         var eventId = ParseEventId(meta.EventId);
@@ -2878,6 +3119,15 @@ public class EventsGrpcService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
         }
+        else if (NamesCaseOnly(requestId, meta.ComplianceId, meta.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    meta.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                    sdkDbContext, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
         else
         {
             // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
@@ -2950,231 +3200,303 @@ public class EventsGrpcService(
 
             ms.Position = 0;
 
-            // 5. Compute checksum + create UploadedData row + write to S3.
-            // Order matches TaskManagementService.CreateTask: create
-            // UploadedData first to get its Id, then build the filename,
-            // then upload. The Update() at the end commits the FileName
-            // back so reads can locate the bytes.
-            string checksum;
-            using (var md5 = MD5.Create())
+            // Step 5 (+ thumbnails): the slow part - UploadedData row and the
+            // storage writes. Steps 6-7 (AttachUploadAsync) bind it to the case.
+            // Legacy requests run both back to back, exactly as before; the
+            // request-id path runs only AttachUploadAsync under the lock.
+            async Task<SdkUploadedData> PutUploadAsync()
             {
-                checksum = BitConverter.ToString(await md5.ComputeHashAsync(ms).ConfigureAwait(false))
-                    .Replace("-", string.Empty)
-                    .ToLowerInvariant();
-            }
-            ms.Position = 0;
-
-            // FileLocation mirrors angular's intermediate-file path shape
-            // (EFormFilesController.AddNewImage line 282/298:
-            //     Path.Combine(Path.GetTempPath(), "cases-temp-files",
-            //                  $"{DateTime.Now.Ticks}.{ext}")
-            // ). Mobile is S3-only — no local file is materialised — but
-            // the column is populated with the same string shape so the
-            // parity harness sees identical UploadedDatas.FileLocation
-            // metadata. The path is column metadata only; nothing on the
-            // mobile read path inspects it as a filesystem location.
-            var fileLocation = Path.Combine(
-                Path.GetTempPath(),
-                "cases-temp-files",
-                $"{DateTime.Now.Ticks}.{extension}");
-
-            // FileName is written in two phases to mirror angular line 297 + 302
-            // (EFormFilesController.AddNewImage):
-            //   phase 1 (Create): FileName = $"{hash}.{ext}"
-            //   phase 2 (Update): FileName = $"{Id}_{FileName}"
-            // The initial UploadedDataVersions row therefore carries the
-            // hash-only form, the second version carries "<id>_<hash>.<ext>".
-            // Both versions are visible to the parity harness; matching the
-            // two-phase shape collapses the column-level divergence on
-            // UploadedDataVersions.
-            var uploadedData = new SdkUploadedData
-            {
-                Checksum = checksum,
-                FileName = $"{checksum}.{extension}",
-                FileLocation = fileLocation,
-                // Stored WITH leading dot (".png" / ".jpg") to match the
-                // SDK + plugin thumbnail-URL template convention
-                // ($"{Id}_700_{Checksum}{Extension}"). See the contract block
-                // at the top of this method for the full rationale.
-                // FileName / fileLocation above keep the explicit "." literal
-                // because they use the local `extension` variable (no dot),
-                // not uploadedData.Extension.
-                Extension = $".{extension}"
-            };
-            await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
-
-            var fileName = $"{uploadedData.Id}_{uploadedData.FileName}";
-            uploadedData.FileName = fileName;
-            await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
-
-            // Materialise bytes once: AWS SDK v4 sets AutoCloseStream=true on
-            // PutObjectRequest, so each PutFileToS3Storage call disposes the
-            // stream it receives. We re-use the bytes for the original + both
-            // thumbnails by handing each upload a fresh MemoryStream over the
-            // same byte[] (mirrors BackendConfigurationTaskManagementService.cs:530-534).
-            ms.Position = 0;
-            var photoBytes = ms.ToArray();
-
-            using (var originalMs = new MemoryStream(photoBytes))
-            {
-                await core.PutFileToS3Storage(originalMs, fileName).ConfigureAwait(false);
-            }
-
-            // Thumbnail generation for raster images, SDK parity. Best-effort:
-            // any failure here is logged but does NOT throw, so the FieldValue /
-            // envelope writes below still run. The original photo is already on
-            // S3 + UploadedData row persisted, so a thumbnail failure means
-            // consumers fall back to the original (acceptable degradation) — far
-            // better than orphaning the row by short-circuiting the rest of the
-            // handler. (uploadedData.Extension is normalized to ".jpg"/".png"
-            // by the earlier content-type switch + ".{ext}" stored form, so we
-            // only check those two literal values.)
-            //
-            // Thumbnail templates intentionally have NO dot literal because
-            // uploadedData.Extension already carries the leading "." — this
-            // matches BackendConfigurationTaskManagementService.cs:526-527 and
-            // the consumer-side URL template
-            // ($"{Id}_700_{Checksum}{Extension}") that SDK + plugin clients
-            // build to fetch our thumbnails.
-            if (uploadedData.Extension is ".jpg" or ".png")
-            {
-                var smallFilename = $"{uploadedData.Id}_300_{uploadedData.Checksum}{uploadedData.Extension}";
-                var bigFilename = $"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}";
-
-                async Task WriteResizedAsync(uint targetWidth, string targetFilename)
+                // 5. Compute checksum + create UploadedData row + write to S3.
+                // Order matches TaskManagementService.CreateTask: create
+                // UploadedData first to get its Id, then build the filename,
+                // then upload. The Update() at the end commits the FileName
+                // back so reads can locate the bytes.
+                string checksum;
+                using (var md5 = MD5.Create())
                 {
-                    using var image = new MagickImage(photoBytes);
-                    image.AutoOrient();
-                    if (image.Width == 0 || image.Height == 0) return;
-                    var ratio = image.Height / (decimal)image.Width;
-                    var newHeight = Math.Max(1u, (uint)Math.Round(ratio * targetWidth));
-                    image.Resize(targetWidth, newHeight);
-                    image.Crop(targetWidth, newHeight);    // SDK parity — Resize may round; Crop pins exact dims
-                    using var resizedMs = new MemoryStream();
-                    await image.WriteAsync(resizedMs).ConfigureAwait(false);
-                    resizedMs.Position = 0;
-                    await core.PutFileToS3Storage(resizedMs, targetFilename).ConfigureAwait(false);
+                    checksum = BitConverter.ToString(await md5.ComputeHashAsync(ms).ConfigureAwait(false))
+                        .Replace("-", string.Empty)
+                        .ToLowerInvariant();
                 }
+                ms.Position = 0;
 
-                try
-                {
-                    await WriteResizedAsync(300, smallFilename).ConfigureAwait(false);
-                    await WriteResizedAsync(700, bigFilename).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex,
-                        "Thumbnail generation failed for UploadedData {Id}; original photo persisted, consumers will fall back to it",
-                        uploadedData.Id);
-                }
-            }
+                // FileLocation mirrors angular's intermediate-file path shape
+                // (EFormFilesController.AddNewImage line 282/298:
+                //     Path.Combine(Path.GetTempPath(), "cases-temp-files",
+                //                  $"{DateTime.Now.Ticks}.{ext}")
+                // ). Mobile is S3-only — no local file is materialised — but
+                // the column is populated with the same string shape so the
+                // parity harness sees identical UploadedDatas.FileLocation
+                // metadata. The path is column metadata only; nothing on the
+                // mobile read path inspects it as a filesystem location.
+                var fileLocation = Path.Combine(
+                    Path.GetTempPath(),
+                    "cases-temp-files",
+                    $"{DateTime.Now.Ticks}.{extension}");
 
-            // 6. Mirror angular's FieldValues row insert.
-            // EFormFilesController.AddNewImage at line 306-316 creates a NEW
-            // FieldValue row per uploaded photo (not an upsert) bound to the
-            // Picture-typed Field on the case's CheckList tree:
-            //   new FieldValue {
-            //     FieldId, CaseId, CheckListId, WorkerId,
-            //     DoneAt = DateTime.UtcNow,
-            //     UploadedDataId = newUploadedData.Id
-            //   }.Create(sdkDbContext);
-            //
-            // Field-id resolution order:
-            //   - meta.FieldId > 0  →  client-provided binding. Validate that
-            //     the supplied id resolves to a Picture-typed field that lives
-            //     inside this case's CheckList tree. A bogus id (wrong type or
-            //     wrong tree) would otherwise corrupt the (CaseId, CheckListId,
-            //     FieldId) triple — e.g. landing an UploadedData reference on
-            //     a Text/Number/Comment field's row, or on a field belonging to
-            //     an unrelated CheckList. We fail loud with InvalidArgument so
-            //     client bugs surface instead of silently producing bad data.
-            //   - meta.FieldId == 0 →  legacy client. BFS-discover the FIRST
-            //     Picture field on the case (s_photo_upload_delete behavior).
-            //
-            // We keep this write IN ADDITION to the existing Cases.Custom
-            // envelope update below, so the mobile read path (which reads
-            // from Cases.Custom) is not regressed; both writes coexist.
-            int resolvedFieldId;
-            if (meta.FieldId > 0)
-            {
-                resolvedFieldId = await ValidateClientPictureFieldIdAsync(
-                        sdkDbContext, meta.FieldId, foundCase.CheckListId)
-                    .ConfigureAwait(false);
-                if (resolvedFieldId <= 0)
+                // FileName is written in two phases to mirror angular line 297 + 302
+                // (EFormFilesController.AddNewImage):
+                //   phase 1 (Create): FileName = $"{hash}.{ext}"
+                //   phase 2 (Update): FileName = $"{Id}_{FileName}"
+                // The initial UploadedDataVersions row therefore carries the
+                // hash-only form, the second version carries "<id>_<hash>.<ext>".
+                // Both versions are visible to the parity harness; matching the
+                // two-phase shape collapses the column-level divergence on
+                // UploadedDataVersions.
+                var uploadedData = new SdkUploadedData
                 {
-                    throw new RpcException(new Status(StatusCode.InvalidArgument,
-                        $"meta.FieldId {meta.FieldId} is not a Picture field on case " +
-                        $"{foundCase.Id}'s checklist tree (root CheckListId={foundCase.CheckListId})."));
-                }
-            }
-            else
-            {
-                resolvedFieldId = await FindPictureFieldIdAsync(sdkDbContext, foundCase.CheckListId)
-                    .ConfigureAwait(false);
-            }
-            var pictureField = resolvedFieldId > 0
-                ? await sdkDbContext.Fields
-                    .FirstOrDefaultAsync(f => f.Id == resolvedFieldId)
-                    .ConfigureAwait(false)
-                : null;
-            if (pictureField != null)
-            {
-                var fieldValue = new Microting.eForm.Infrastructure.Data.Entities.FieldValue
-                {
-                    FieldId = pictureField.Id,
-                    CaseId = foundCase.Id,
-                    CheckListId = pictureField.CheckListId,
-                    WorkerId = foundCase.WorkerId,
-                    DoneAt = DateTime.UtcNow,
-                    UploadedDataId = uploadedData.Id
+                    Checksum = checksum,
+                    FileName = $"{checksum}.{extension}",
+                    FileLocation = fileLocation,
+                    // Stored WITH leading dot (".png" / ".jpg") to match the
+                    // SDK + plugin thumbnail-URL template convention
+                    // ($"{Id}_700_{Checksum}{Extension}"). See the contract block
+                    // at the top of this method for the full rationale.
+                    // FileName / fileLocation above keep the explicit "." literal
+                    // because they use the local `extension` variable (no dot),
+                    // not uploadedData.Extension.
+                    Extension = $".{extension}"
                 };
-                await fieldValue.Create(sdkDbContext).ConfigureAwait(false);
-            }
+                await uploadedData.Create(sdkDbContext).ConfigureAwait(false);
 
-            // 7. Update Case.Custom envelope: replace existing entry at
-            // slot if present (soft-deleting its UploadedData row), then
-            // append the new tuple. Kept for backward compatibility with
-            // the existing mobile read path.
-            var commentAtUtc = meta.ClientTsUnix > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
-                : DateTime.UtcNow;
+                var fileName = $"{uploadedData.Id}_{uploadedData.FileName}";
+                uploadedData.FileName = fileName;
+                await uploadedData.Update(sdkDbContext).ConfigureAwait(false);
 
-            var envelope = TryParseEnvelope(foundCase.Custom) ?? new EventCustomEnvelope();
-            envelope.EventPhotos ??= new List<EventPhotoBody>();
+                // Materialise bytes once: AWS SDK v4 sets AutoCloseStream=true on
+                // PutObjectRequest, so each PutFileToS3Storage call disposes the
+                // stream it receives. We re-use the bytes for the original + both
+                // thumbnails by handing each upload a fresh MemoryStream over the
+                // same byte[] (mirrors BackendConfigurationTaskManagementService.cs:530-534).
+                ms.Position = 0;
+                var photoBytes = ms.ToArray();
 
-            var existing = envelope.EventPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
-            if (existing != null)
-            {
-                if (existing.UploadedDataId > 0)
+                using (var originalMs = new MemoryStream(photoBytes))
                 {
-                    var stale = await sdkDbContext.UploadedDatas
-                        .FirstOrDefaultAsync(u => u.Id == existing.UploadedDataId)
-                        .ConfigureAwait(false);
-                    if (stale != null)
+                    await PutFileToS3StorageAsync(core, originalMs, fileName).ConfigureAwait(false);
+                }
+
+                // Thumbnail generation for raster images, SDK parity. Best-effort:
+                // any failure here is logged but does NOT throw, so the FieldValue /
+                // envelope writes below still run. The original photo is already on
+                // S3 + UploadedData row persisted, so a thumbnail failure means
+                // consumers fall back to the original (acceptable degradation) — far
+                // better than orphaning the row by short-circuiting the rest of the
+                // handler. (uploadedData.Extension is normalized to ".jpg"/".png"
+                // by the earlier content-type switch + ".{ext}" stored form, so we
+                // only check those two literal values.)
+                //
+                // Thumbnail templates intentionally have NO dot literal because
+                // uploadedData.Extension already carries the leading "." — this
+                // matches BackendConfigurationTaskManagementService.cs:526-527 and
+                // the consumer-side URL template
+                // ($"{Id}_700_{Checksum}{Extension}") that SDK + plugin clients
+                // build to fetch our thumbnails.
+                if (uploadedData.Extension is ".jpg" or ".png")
+                {
+                    var smallFilename = $"{uploadedData.Id}_300_{uploadedData.Checksum}{uploadedData.Extension}";
+                    var bigFilename = $"{uploadedData.Id}_700_{uploadedData.Checksum}{uploadedData.Extension}";
+
+                    async Task WriteResizedAsync(uint targetWidth, string targetFilename)
                     {
-                        await stale.Delete(sdkDbContext).ConfigureAwait(false);
+                        using var image = new MagickImage(photoBytes);
+                        image.AutoOrient();
+                        if (image.Width == 0 || image.Height == 0) return;
+                        var ratio = image.Height / (decimal)image.Width;
+                        var newHeight = Math.Max(1u, (uint)Math.Round(ratio * targetWidth));
+                        image.Resize(targetWidth, newHeight);
+                        image.Crop(targetWidth, newHeight);    // SDK parity — Resize may round; Crop pins exact dims
+                        using var resizedMs = new MemoryStream();
+                        await image.WriteAsync(resizedMs).ConfigureAwait(false);
+                        resizedMs.Position = 0;
+                        await PutFileToS3StorageAsync(core, resizedMs, targetFilename).ConfigureAwait(false);
+                    }
+
+                    try
+                    {
+                        await WriteResizedAsync(300, smallFilename).ConfigureAwait(false);
+                        await WriteResizedAsync(700, bigFilename).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex,
+                            "Thumbnail generation failed for UploadedData {Id}; original photo persisted, consumers will fall back to it",
+                            uploadedData.Id);
                     }
                 }
-                envelope.EventPhotos.Remove(existing);
+
+                return uploadedData;
             }
 
-            envelope.EventPhotos.Add(new EventPhotoBody
+            // Steps 6-7. A non-empty recordRequestId (contract_version 1 only)
+            // is recorded in the envelope in the same Case update as the
+            // photo entry.
+            async Task AttachUploadAsync(SdkUploadedData uploadedData, string recordRequestId)
             {
-                Slot = meta.Slot,
-                UploadedDataId = uploadedData.Id,
-                TsUnix = ToUnixSeconds(commentAtUtc),
-                ContentType = contentType
-            });
+                // 6. Mirror angular's FieldValues row insert.
+                // EFormFilesController.AddNewImage at line 306-316 creates a NEW
+                // FieldValue row per uploaded photo (not an upsert) bound to the
+                // Picture-typed Field on the case's CheckList tree:
+                //   new FieldValue {
+                //     FieldId, CaseId, CheckListId, WorkerId,
+                //     DoneAt = DateTime.UtcNow,
+                //     UploadedDataId = newUploadedData.Id
+                //   }.Create(sdkDbContext);
+                //
+                // Field-id resolution order:
+                //   - meta.FieldId > 0  →  client-provided binding. Validate that
+                //     the supplied id resolves to a Picture-typed field that lives
+                //     inside this case's CheckList tree. A bogus id (wrong type or
+                //     wrong tree) would otherwise corrupt the (CaseId, CheckListId,
+                //     FieldId) triple — e.g. landing an UploadedData reference on
+                //     a Text/Number/Comment field's row, or on a field belonging to
+                //     an unrelated CheckList. We fail loud with InvalidArgument so
+                //     client bugs surface instead of silently producing bad data.
+                //   - meta.FieldId == 0 →  legacy client. BFS-discover the FIRST
+                //     Picture field on the case (s_photo_upload_delete behavior).
+                //
+                // We keep this write IN ADDITION to the existing Cases.Custom
+                // envelope update below, so the mobile read path (which reads
+                // from Cases.Custom) is not regressed; both writes coexist.
+                int resolvedFieldId;
+                if (meta.FieldId > 0)
+                {
+                    resolvedFieldId = await ValidateClientPictureFieldIdAsync(
+                            sdkDbContext, meta.FieldId, foundCase.CheckListId)
+                        .ConfigureAwait(false);
+                    if (resolvedFieldId <= 0)
+                    {
+                        throw new RpcException(new Status(StatusCode.InvalidArgument,
+                            $"meta.FieldId {meta.FieldId} is not a Picture field on case " +
+                            $"{foundCase.Id}'s checklist tree (root CheckListId={foundCase.CheckListId})."));
+                    }
+                }
+                else
+                {
+                    resolvedFieldId = await FindPictureFieldIdAsync(sdkDbContext, foundCase.CheckListId)
+                        .ConfigureAwait(false);
+                }
+                var pictureField = resolvedFieldId > 0
+                    ? await sdkDbContext.Fields
+                        .FirstOrDefaultAsync(f => f.Id == resolvedFieldId)
+                        .ConfigureAwait(false)
+                    : null;
+                if (pictureField != null)
+                {
+                    var fieldValue = new Microting.eForm.Infrastructure.Data.Entities.FieldValue
+                    {
+                        FieldId = pictureField.Id,
+                        CaseId = foundCase.Id,
+                        CheckListId = pictureField.CheckListId,
+                        WorkerId = foundCase.WorkerId,
+                        DoneAt = DateTime.UtcNow,
+                        UploadedDataId = uploadedData.Id
+                    };
+                    await fieldValue.Create(sdkDbContext).ConfigureAwait(false);
+                }
 
-            foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
-            await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+                // 7. Update Case.Custom envelope: replace existing entry at
+                // slot if present (soft-deleting its UploadedData row), then
+                // append the new tuple. Kept for backward compatibility with
+                // the existing mobile read path.
+                var commentAtUtc = meta.ClientTsUnix > 0
+                    ? DateTimeOffset.FromUnixTimeSeconds(meta.ClientTsUnix).UtcDateTime
+                    : DateTime.UtcNow;
 
-            // 8. Echo the new UploadedData id as the storage_id so the
-            // client can address subsequent reads / removes.
-            return new UploadPhotoResponse
+                var envelope = TryParseEnvelope(foundCase.Custom) ?? new EventCustomEnvelope();
+                envelope.EventPhotos ??= new List<EventPhotoBody>();
+
+                var existing = envelope.EventPhotos.FirstOrDefault(p => p.Slot == meta.Slot);
+                if (existing != null)
+                {
+                    if (existing.UploadedDataId > 0)
+                    {
+                        var stale = await sdkDbContext.UploadedDatas
+                            .FirstOrDefaultAsync(u => u.Id == existing.UploadedDataId)
+                            .ConfigureAwait(false);
+                        if (stale != null)
+                        {
+                            await stale.Delete(sdkDbContext).ConfigureAwait(false);
+                        }
+                    }
+                    envelope.EventPhotos.Remove(existing);
+                }
+
+                envelope.EventPhotos.Add(new EventPhotoBody
+                {
+                    Slot = meta.Slot,
+                    UploadedDataId = uploadedData.Id,
+                    TsUnix = ToUnixSeconds(commentAtUtc),
+                    ContentType = contentType
+                });
+
+                if (recordRequestId.Length > 0)
+                {
+                    // contract_version 1: remember this upload's storage id.
+                    AddAppliedRequest(envelope, recordRequestId, OpUploadPhoto,
+                        uploadedData.Id.ToString(CultureInfo.InvariantCulture));
+                }
+
+                foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
+                await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+            }
+
+            if (requestId.Length == 0)
             {
-                StorageId = uploadedData.Id.ToString(CultureInfo.InvariantCulture)
-            };
+                var stored = await PutUploadAsync().ConfigureAwait(false);
+                await AttachUploadAsync(stored, string.Empty).ConfigureAwait(false);
+
+                // 8. Echo the new UploadedData id as the storage_id so the
+                // client can address subsequent reads / removes.
+                return new UploadPhotoResponse
+                {
+                    StorageId = stored.Id.ToString(CultureInfo.InvariantCulture)
+                };
+            }
+
+            // contract_version 1. A sequential repeat of an applied request
+            // id is answered before any storage work.
+            var appliedBefore = FindAppliedRequest(
+                await ReadEnvelopeFreshAsync(sdkDbContext, foundCase.Id).ConfigureAwait(false),
+                requestId, OpUploadPhoto);
+            if (appliedBefore != null)
+            {
+                return new UploadPhotoResponse { StorageId = appliedBefore.Result, Replayed = true };
+            }
+
+            // The slow storage work runs OUTSIDE the occurrence lock, so a
+            // completion (old app or new) on the same occurrence never waits
+            // behind an upload. Under the lock: re-check, attach, record.
+            var prepared = await PutUploadAsync().ConfigureAwait(false);
+            var preparedId = prepared.Id.ToString(CultureInfo.InvariantCulture);
+            var (storageId, replayed) = await WithOccurrenceLockAsync(compliance.Id, async () =>
+            {
+                await sdkDbContext.Entry(foundCase).ReloadAsync().ConfigureAwait(false);
+                var prior = FindAppliedRequest(TryParseEnvelope(foundCase.Custom), requestId, OpUploadPhoto);
+                if (prior != null && prior.Result == preparedId)
+                {
+                    // Our own attach already landed (execution-strategy retry).
+                    return (preparedId, false);
+                }
+
+                if (prior != null)
+                {
+                    // An identical request in flight attached first. Soft-delete
+                    // the surplus row; its storage objects stay, as RemovePhoto
+                    // and replaced slots leave theirs (the SDK has no delete).
+                    await prepared.Delete(sdkDbContext).ConfigureAwait(false);
+                    logger.LogInformation(
+                        "UploadPhoto: requestId={RequestId} was attached concurrently as UploadedData {AttachedId}; "
+                        + "surplus UploadedData {SurplusId} ({FileName}) soft-deleted, its storage object is left unreferenced",
+                        requestId, prior.Result, prepared.Id, prepared.FileName);
+                    return (prior.Result, true);
+                }
+
+                await AttachUploadAsync(prepared, requestId).ConfigureAwait(false);
+                return (preparedId, false);
+            }).ConfigureAwait(false);
+
+            return new UploadPhotoResponse { StorageId = storageId, Replayed = replayed };
         }
         finally
         {
@@ -3207,6 +3529,9 @@ public class EventsGrpcService(
             throw new RpcException(new Status(StatusCode.InvalidArgument,
                 $"slot must be in 0..{MaxPhotoSlots - 1}."));
         }
+
+        // contract_version 1: validates request_id (only new apps send it).
+        var requestId = NormalizeRequestId(request.RequestId);
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
@@ -3242,6 +3567,15 @@ public class EventsGrpcService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
         }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                    sdkDbContext, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
         else
         {
             // Legacy fuzzy lookup — DO NOT remove. See CompleteEvent.
@@ -3263,7 +3597,7 @@ public class EventsGrpcService(
         if (compliance == null)
         {
             // No Case → nothing to remove. Treat as success (idempotent).
-            return new RemovePhotoResponse();
+            return NothingToRemoveResponse(request);
         }
 
         var foundCase = await sdkDbContext.Cases
@@ -3273,7 +3607,14 @@ public class EventsGrpcService(
         if (foundCase == null)
         {
             // SDK Case missing → no envelope to clean up. Idempotent.
-            return new RemovePhotoResponse();
+            return NothingToRemoveResponse(request);
+        }
+
+        if (IsContractRemove(request))
+        {
+            // contract_version 1: request_id and/or expected_storage_id.
+            return await RemovePhotoWithContractAsync(request, compliance.Id, sdkDbContext, foundCase)
+                .ConfigureAwait(false);
         }
 
         var envelope = TryParseEnvelope(foundCase.Custom);
@@ -3352,7 +3693,12 @@ public class EventsGrpcService(
         var hasComment = envelope.EventComment != null
             && !string.IsNullOrEmpty(envelope.EventComment.Text);
         var hasPhotos = envelope.EventPhotos is { Count: > 0 };
-        if (!hasComment && !hasPhotos)
+        // Request-id records keep the envelope alive; they are only ever
+        // present when a contract-version-1 request wrote them.
+        var hasRequestRecords = !string.IsNullOrEmpty(envelope.CompletedRequestId)
+            || !string.IsNullOrEmpty(envelope.CompletingRequestId)
+            || envelope.AppliedRequests is { Count: > 0 };
+        if (!hasComment && !hasPhotos && !hasRequestRecords)
         {
             return string.Empty;
         }
@@ -3376,6 +3722,27 @@ public class EventsGrpcService(
 
         [JsonPropertyName("event_photos")]
         public List<EventPhotoBody>? EventPhotos { get; set; }
+
+        // Contract-version-1 request-id bookkeeping (EventsGrpcService.Contract.cs).
+        // Omitted when unset so envelopes written by requests without a
+        // request id stay byte-identical to what older servers wrote.
+        [JsonPropertyName("completed_request_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string CompletedRequestId { get; set; }
+
+        // Set while a request-id completion is between its case update and
+        // the end of its bundled answers (see StampCompletionInFlight).
+        [JsonPropertyName("completing_request_id")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string CompletingRequestId { get; set; }
+
+        [JsonPropertyName("completing_ts_unix")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public long? CompletingTsUnix { get; set; }
+
+        [JsonPropertyName("applied_requests")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<AppliedRequestRecord> AppliedRequests { get; set; }
     }
 
     private sealed class EventCommentBody
@@ -3440,6 +3807,8 @@ public class EventsGrpcService(
         }
 
         var eventId = ParseEventId(request.EventId);
+        // contract_version 1: "" for legacy requests (unchanged behaviour).
+        var requestId = NormalizeRequestId(request.RequestId);
 
         var arp = await dbContext.AreaRulePlannings
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
@@ -3474,6 +3843,24 @@ public class EventsGrpcService(
         // write to it.
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var sdkDbContext = core.DbContextHelper.GetDbContext();
+
+        if (requestId.Length > 0)
+        {
+            // contract_version 1: a repeat of an applied request id is
+            // answered from the current state BEFORE the live-compliance
+            // lookup, so a repeat that arrives after completion is a replay,
+            // not the legacy FAILED_PRECONDITION.
+            var appliedOn = await FindComplianceThatAppliedAsync(
+                    request.ComplianceId, request.MicrotingSdkCaseId, arp.ItemPlanningId,
+                    requestId, OpSetFieldValue, sdkDbContext)
+                .ConfigureAwait(false);
+            if (appliedOn != null)
+            {
+                return await BuildSetFieldValueContractReplyAsync(
+                        appliedOn, arp.PropertyId, eventId, sdkSiteId, replayed: true, context.CancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
         Compliance? compliance;
         if (request.ComplianceId > 0)
         {
@@ -3482,6 +3869,15 @@ public class EventsGrpcService(
                 .Where(x => x.Id == (int)request.ComplianceId)
                 .Where(x => x.PlanningId == arp.ItemPlanningId)
                 .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+        }
+        else if (NamesCaseOnly(requestId, request.ComplianceId, request.MicrotingSdkCaseId))
+        {
+            // contract_version 1: a request-id write that names its SDK case
+            // acts on THAT case only (authorised planning, caller's site).
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: true,
+                    sdkDbContext, context.CancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -3563,47 +3959,103 @@ public class EventsGrpcService(
             $"{fieldValueRowId}|{canonicalValue}"
         };
 
-        try
+        async Task ApplyFieldValueAsync()
         {
-            // Core.CaseUpdate wraps in try/catch and returns false on failure
-            // (only Log.LogFail side effect — see eform-sdk Core.cs:1665-1669).
-            // Without this check the silent write failure would look like
-            // success to the client; the next stream poll then overwrites the
-            // user's optimistic value with the template default, leaving the
-            // user confused. FailedPrecondition is treated by the Flutter side
-            // as a permanent error → conflict modal → user can retry.
-            var ok = await core.CaseUpdate(caseId, fieldValueList, []).ConfigureAwait(false);
-            if (!ok)
+            try
             {
-                logger.LogError(
-                    "EventsGrpcService.SetFieldValue: Core.CaseUpdate returned false for event {EventId} field {FieldId} caseId {CaseId}",
-                    eventId, request.FieldId, caseId);
-                throw new RpcException(new Status(StatusCode.FailedPrecondition,
-                    "Field value persistence failed in SDK CaseUpdate"));
+                // Core.CaseUpdate wraps in try/catch and returns false on failure
+                // (only Log.LogFail side effect — see eform-sdk Core.cs:1665-1669).
+                // Without this check the silent write failure would look like
+                // success to the client; the next stream poll then overwrites the
+                // user's optimistic value with the template default, leaving the
+                // user confused. FailedPrecondition is treated by the Flutter side
+                // as a permanent error → conflict modal → user can retry.
+                var ok = await core.CaseUpdate(caseId, fieldValueList, []).ConfigureAwait(false);
+                if (!ok)
+                {
+                    logger.LogError(
+                        "EventsGrpcService.SetFieldValue: Core.CaseUpdate returned false for event {EventId} field {FieldId} caseId {CaseId}",
+                        eventId, request.FieldId, caseId);
+                    throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                        "Field value persistence failed in SDK CaseUpdate"));
+                }
+                await core.CaseUpdateFieldValues(caseId, language).ConfigureAwait(false);
             }
-            await core.CaseUpdateFieldValues(caseId, language).ConfigureAwait(false);
+            catch (RpcException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,
+                    "EventsGrpcService.SetFieldValue: CaseUpdate failed for event {EventId} field {FieldId}",
+                    eventId, request.FieldId);
+                throw new RpcException(new Status(StatusCode.Internal,
+                    $"Field value update failed: {ex.Message}"));
+            }
         }
-        catch (RpcException)
+
+        if (requestId.Length > 0)
         {
-            throw;
+            // contract_version 1: under the occurrence lock (plugin-DB row
+            // lock on the Compliance; the SDK writes below use their own
+            // connections, so they cannot deadlock against it): re-check,
+            // apply, record. Two identical requests in flight serialise here.
+            var replayed = await WithOccurrenceLockAsync(compliance.Id, async lockedState =>
+            {
+                var envelope = await ReadEnvelopeFreshAsync(sdkDbContext, caseId).ConfigureAwait(false);
+                if (FindAppliedRequest(envelope, requestId, OpSetFieldValue) != null)
+                {
+                    return true;
+                }
+
+                // Re-check under the lock: a completion that claimed the
+                // occurrence after the lookup above must win; the write gets
+                // the same answer as a lookup that finds no live compliance.
+                // (The legacy path keeps its own pre-existing window.)
+                if (lockedState == Constants.WorkflowStates.Removed)
+                {
+                    throw new RpcException(new Status(StatusCode.FailedPrecondition,
+                        $"Event {eventId} has no backing Case — field values cannot be persisted yet."));
+                }
+
+                await ApplyFieldValueAsync().ConfigureAwait(false);
+                await RecordAppliedRequestAsync(sdkDbContext, caseId, requestId, OpSetFieldValue, string.Empty)
+                    .ConfigureAwait(false);
+                return false;
+            }).ConfigureAwait(false);
+
+            return await BuildSetFieldValueContractReplyAsync(
+                    compliance, arp.PropertyId, eventId, sdkSiteId, replayed, context.CancellationToken)
+                .ConfigureAwait(false);
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex,
-                "EventsGrpcService.SetFieldValue: CaseUpdate failed for event {EventId} field {FieldId}",
-                eventId, request.FieldId);
-            throw new RpcException(new Status(StatusCode.Internal,
-                $"Field value update failed: {ex.Message}"));
-        }
+
+        await ApplyFieldValueAsync().ConfigureAwait(false);
 
         // Reload the event for the response — preserve comment + photos from
         // the envelope exactly as SetComment does.
         var dayKey = (compliance.Deadline != default ? compliance.Deadline : DateTime.UtcNow)
             .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var (evt, _) = await BuildSetFieldValueEchoAsync(
+                arp.PropertyId, eventId, dayKey, sdkSiteId, context.CancellationToken)
+            .ConfigureAwait(false);
+
+        return new SetFieldValueResponse { Event = evt };
+    }
+
+    /// <summary>
+    /// The Event SetFieldValue answers with: the day re-read through the
+    /// calendar with envelope comment, fields and attachments, or a
+    /// synthesised minimal Event when the task fell out of the window.
+    /// Also returns the calendar row (null for the synthesised Event).
+    /// </summary>
+    private async Task<(Event Evt, CalendarTaskResponseModel Task)> BuildSetFieldValueEchoAsync(
+        int propertyId, int eventId, string dayKey, int sdkSiteId, CancellationToken ct)
+    {
 
         var refreshed = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
         {
-            PropertyId = arp.PropertyId,
+            PropertyId = propertyId,
             WeekStart = dayKey,
             WeekEnd = dayKey,
             BoardIds = [],
@@ -3652,7 +4104,7 @@ public class EventsGrpcService(
                 evt.Fields.AddRange(fields);
             }
 
-            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, ct)
                 .ConfigureAwait(false);
         }
         else
@@ -3661,7 +4113,7 @@ public class EventsGrpcService(
             evt = new Event
             {
                 Id = eventId.ToString(CultureInfo.InvariantCulture),
-                PropertyId = arp.PropertyId.ToString(CultureInfo.InvariantCulture),
+                PropertyId = propertyId.ToString(CultureInfo.InvariantCulture),
                 BoardId = string.Empty,
                 PlanDayKey = dayKey,
                 PlannedAt = string.Empty,
@@ -3673,11 +4125,29 @@ public class EventsGrpcService(
                 Comment = string.Empty
             };
 
-            await PopulateCalendarAttachments(evt, eventId, dbContext, context.CancellationToken)
+            await PopulateCalendarAttachments(evt, eventId, dbContext, ct)
                 .ConfigureAwait(false);
         }
 
-        return new SetFieldValueResponse { Event = evt };
+        return (evt, refreshedTask);
+    }
+
+    /// <summary>
+    /// contract_version 1 reply for a SetFieldValue that carried a request
+    /// id (applied now or replayed): the same echo as the legacy reply plus
+    /// the real compliance_id / microting_sdk_case_id, version and etag.
+    /// </summary>
+    private async Task<SetFieldValueResponse> BuildSetFieldValueContractReplyAsync(
+        Compliance compliance, int propertyId, int eventId, int sdkSiteId, bool replayed, CancellationToken ct)
+    {
+        var dayKey = (compliance.Deadline != default ? compliance.Deadline : DateTime.UtcNow)
+            .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var (evt, task) = await BuildSetFieldValueEchoAsync(propertyId, eventId, dayKey, sdkSiteId, ct)
+            .ConfigureAwait(false);
+        evt.ComplianceId = compliance.Id;
+        evt.MicrotingSdkCaseId = compliance.MicrotingSdkCaseId;
+        await StampWriteReplyAsync(evt, compliance.Id, compliance.MicrotingSdkCaseId, task).ConfigureAwait(false);
+        return new SetFieldValueResponse { Event = evt, Replayed = replayed };
     }
 
     private static int ParseEventId(string raw)

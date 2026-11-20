@@ -24,6 +24,63 @@ service Events {
   rpc UploadPhoto(stream UploadPhotoChunk) returns (UploadPhotoResponse);
   rpc RemovePhoto(RemovePhotoRequest) returns (RemovePhotoResponse);
   rpc SetFieldValue(SetFieldValueRequest) returns (SetFieldValueResponse);
+  // contract_version 1. Capability handshake: a server that predates it
+  // answers UNIMPLEMENTED, which is the client's signal that none of the
+  // contract_version >= 1 fields below are honoured.
+  rpc GetServerInfo(GetServerInfoRequest) returns (GetServerInfoResponse);
+  // contract_version 1. Reads one occurrence with the same authorisation and
+  // shape as ListEvents. A task the caller may not read answers found=false
+  // (never PERMISSION_DENIED), so ids cannot be probed.
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse);
+}
+
+// contract_version 1.
+message GetServerInfoRequest {}
+// contract_version 1.
+message GetServerInfoResponse {
+  // Monotonic contract revision of this server. 1 = the first revision that
+  // has this RPC.
+  int32 contract_version = 1;
+  // Exactly the optional behaviours this server implements, e.g.
+  // "request_id", "get_event", "event_version". Clients must test for the
+  // capability, not compare contract_version.
+  repeated string capabilities = 2;
+}
+
+// contract_version 1. Identifies one occurrence on the wire.
+message EventKey {
+  // Event.id (AreaRulePlanning id, decimal string), same type as Event.id.
+  string event_id = 1;
+  // Event.plan_day_key, yyyy-MM-dd.
+  string plan_day_key = 2;
+  // Event.compliance_id. When present, only the occurrence backed by that
+  // Compliance row matches; when absent, any occurrence of event_id on
+  // plan_day_key matches.
+  optional int64 compliance_id = 3;
+}
+
+// contract_version 1.
+message GetEventRequest { EventKey key = 1; }
+// contract_version 1.
+message GetEventResponse {
+  // Unset when found is false.
+  Event event = 1;
+  bool found = 2;
+}
+
+// contract_version 1. Result of a RemovePhoto that carried request_id or
+// expected_storage_id. Old requests (neither field set) get an empty
+// RemovePhotoResponse exactly as before (outcome UNSPECIFIED).
+enum RemovePhotoOutcome {
+  REMOVE_PHOTO_OUTCOME_UNSPECIFIED = 0;
+  // The photo was removed by this request (or, when replayed is true, by the
+  // first delivery of this request id).
+  REMOVE_PHOTO_OUTCOME_REMOVED = 1;
+  // The slot held no photo; nothing was written. Success.
+  REMOVE_PHOTO_OUTCOME_ALREADY_ABSENT = 2;
+  // The slot holds a photo other than expected_storage_id; it was NOT
+  // removed. current_storage_id names the photo that is there now.
+  REMOVE_PHOTO_OUTCOME_SLOT_HOLDS_OTHER_PHOTO = 3;
 }
 
 message UploadPhotoChunk {
@@ -50,9 +107,17 @@ message UploadPhotoMeta {
   // that pre-date this field; server falls back to BFS-first-Picture
   // discovery (matches the prior single-Picture assumption).
   int32 field_id = 7;
+  // contract_version 1. Client-generated id (UUID recommended, at most 128
+  // characters) of this write. Empty = legacy behaviour (every delivery is a
+  // new upload). Non-empty: a repeat of an applied request returns the same
+  // storage_id and writes nothing.
+  string request_id = 8;
 }
 message UploadPhotoResponse {
   string storage_id = 1;
+  // contract_version 1. True when request_id had already been applied and
+  // this reply is the recorded result (no new upload was stored).
+  bool replayed = 2;
 }
 
 message RemovePhotoRequest {
@@ -62,8 +127,24 @@ message RemovePhotoRequest {
   // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
   int64 compliance_id = 4;
   int64 microting_sdk_case_id = 5;
+  // contract_version 1. See UploadPhotoMeta.request_id.
+  string request_id = 6;
+  // contract_version 1. UploadPhotoResponse.storage_id of the photo the
+  // client means to remove. When set, the slot is cleared only if it still
+  // holds exactly this photo; see RemovePhotoOutcome.
+  string expected_storage_id = 7;
 }
-message RemovePhotoResponse {}
+message RemovePhotoResponse {
+  // contract_version 1. Set only when the request carried request_id or
+  // expected_storage_id.
+  RemovePhotoOutcome outcome = 1;
+  // contract_version 1. True when request_id had already been applied;
+  // outcome is then the recorded outcome of the first delivery.
+  bool replayed = 2;
+  // contract_version 1. With REMOVE_PHOTO_OUTCOME_SLOT_HOLDS_OTHER_PHOTO, the
+  // storage id now in the slot. Empty otherwise.
+  string current_storage_id = 3;
+}
 
 message CompleteEventRequest {
   string event_id = 1;
@@ -87,6 +168,12 @@ message CompleteEventRequest {
   string comment = 8;
   // ISO-8601 date (yyyy-MM-dd); empty = fall back to deadline date
   string done_at_user_modifiable = 9;
+  // contract_version 1. See UploadPhotoMeta.request_id. A repeat of an
+  // applied completion answers success with the current Event,
+  // answers_discarded=false and replayed=true. A different request (or no
+  // request id) against an already completed occurrence keeps the
+  // "already completed" answer.
+  string request_id = 10;
 }
 message CompleteEventResponse {
   Event event = 1;
@@ -101,6 +188,9 @@ message CompleteEventResponse {
   // answers_discarded is true, e.g. "Already completed by <name> on <date>;
   // your answers were not saved." Empty when answers_discarded is false.
   string discarded_reason = 3;
+  // contract_version 1. True when request_id had already been applied and
+  // this reply describes the current state instead of applying it again.
+  bool replayed = 4;
 }
 
 // One field-value write bundled into CompleteEventRequest.field_values.
@@ -122,8 +212,16 @@ message SetCommentRequest {
   // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
   int64 compliance_id = 4;
   int64 microting_sdk_case_id = 5;
+  // contract_version 1. See UploadPhotoMeta.request_id. When set, the reply
+  // Event also carries the real compliance_id / microting_sdk_case_id
+  // (they stay 0 without it, as before), version and etag.
+  string request_id = 6;
 }
-message SetCommentResponse { Event event = 1; }
+message SetCommentResponse {
+  Event event = 1;
+  // contract_version 1. True when request_id had already been applied.
+  bool replayed = 2;
+}
 
 message SetFieldValueRequest {
   string event_id = 1;
@@ -133,8 +231,14 @@ message SetFieldValueRequest {
   // See UploadPhotoMeta.compliance_id / microting_sdk_case_id. 0 = legacy.
   int64 compliance_id = 5;
   int64 microting_sdk_case_id = 6;
+  // contract_version 1. See SetCommentRequest.request_id.
+  string request_id = 7;
 }
-message SetFieldValueResponse { Event event = 1; }
+message SetFieldValueResponse {
+  Event event = 1;
+  // contract_version 1. True when request_id had already been applied.
+  bool replayed = 2;
+}
 
 message ListPropertiesRequest {}
 message ListPropertiesResponse { repeated Property properties = 1; }
@@ -226,6 +330,36 @@ message Event {
   // pre-filters non-actionable rows out and so emits this as false; default
   // proto3 zero-value remains backwards-compatible with older clients.
   bool task_is_expired = 18;
+  // contract_version 1. Ordering hint: the newest UpdatedAt (UTC,
+  // microseconds since the Unix epoch) of the stored rows this Event is
+  // built from. Ordered but imperfect: blind to time-driven changes (expiry,
+  // window roll-over), to template / translation / site-language changes and
+  // to app-server clock steps. Unset when no backing row was found. Compare
+  // etag for equality. Set on every read; on write replies only when the
+  // request carried request_id.
+  optional int64 version = 19;
+  // contract_version 1. Stable hash of this Event's content excluding version
+  // and etag: equal content gives an equal etag across calls and across
+  // servers of the same version. Opaque; compare for equality only.
+  // Caveat: a ListEvents / ListTaskTracker / StreamEventChanges reply that
+  // holds SEVERAL occurrences of the same event id (a multi-day window) can
+  // give a later occurrence the comment and field values of an earlier one
+  // (a known server defect kept for installed apps); GetEvent and write
+  // replies always carry the occurrence's own content. For such occurrences
+  // the list etag differs from the GetEvent etag without any write, so do
+  // not compare a multi-day list etag with a GetEvent etag; compare GetEvent
+  // with GetEvent (or a write reply), or use a one-day list.
+  string etag = 20;
+  // contract_version 1. Calendar date (yyyy-MM-dd) of the backing
+  // Compliance.Deadline, as stored (a date, no time zone). Empty when the
+  // occurrence has no compliance yet. A UTC due_at instant will follow once
+  // properties carry a time zone; it is deliberately not derived now.
+  string due_date_key = 21;
+  // contract_version 1. Local wall-clock start time (HH:mm) the task is
+  // planned for, in the property's (unstated) local time. Empty for all-day
+  // tasks and when unknown. Unlike planned_at it is never "00:00" for an
+  // all-day task.
+  string due_time_local = 22;
 }
 
 message Attachment {
