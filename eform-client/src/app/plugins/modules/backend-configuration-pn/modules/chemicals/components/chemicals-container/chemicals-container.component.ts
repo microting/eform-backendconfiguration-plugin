@@ -238,8 +238,14 @@ export class ChemicalsContainerComponent implements OnInit {
       this.navigating = false;
       // A cancel is also how the router reports a navigation replaced by a newer one, whose start
       // follows in the same tick: write after that tick, and only if nothing is navigating then.
+      // A timer that finds a newer navigation running leaves the write to that navigation's end, and must not
+      // mark a pick as pending (urlBehind): the user picked nothing.
       clearTimeout(this.pendingSync);
-      this.pendingSync = setTimeout(() => this.syncUrl());
+      this.pendingSync = setTimeout(() => {
+        if (!this.navigating) {
+          this.syncUrl();
+        }
+      });
     }
   }
 
@@ -266,17 +272,21 @@ export class ChemicalsContainerComponent implements OnInit {
   }
 
   /**
-   * What the URL of a finished navigation selects: a known ?propertyId=, or on a screen with "All" no parameter
-   * (unless a selection made during the navigation is still to be written). Null: keep the selection.
+   * What the URL of a finished navigation selects: a known ?propertyId=, or on a screen with "All" no parameter.
+   * Null: keep the selection. A pick made while the navigation ran is newer than its URL, so it always wins
+   * (the caller then writes it to the URL; that write's own end finds the URL in step, so nothing loops).
    */
   private selectionFromUrl(): ChemicalsPickerValue | null {
     const urlBehind = this.urlBehind;
     this.urlBehind = false;
+    if (urlBehind) {
+      return null;
+    }
     const fromUrl = this.propertyIdFromUrl();
     if (this.hasProperty(fromUrl)) {
       return fromUrl;
     }
-    return this.screenAllowsAll && fromUrl === null && !urlBehind && this.properties.length ? CHEMICALS_ALL_PROPERTIES : null;
+    return this.screenAllowsAll && fromUrl === null && this.properties.length ? CHEMICALS_ALL_PROPERTIES : null;
   }
 
   private hasProperty(id: number | null): boolean {
