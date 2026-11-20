@@ -10,12 +10,12 @@ import {BackendConfigurationPnTailBiteService} from './backend-configuration-pn-
  */
 describe('BackendConfigurationPnTailBiteService', () => {
   const base = 'api/backend-configuration-pn/tail-bite';
-  let api: {get: Mock; post: Mock; postNoToast: Mock; put: Mock; delete: Mock};
+  let api: {get: Mock; post: Mock; postNoToast: Mock; put: Mock; delete: Mock; getBlobData: Mock};
   let service: BackendConfigurationPnTailBiteService;
 
   beforeEach(() => {
     const ok = () => vi.fn().mockReturnValue(of({success: true}));
-    api = {get: ok(), post: ok(), postNoToast: ok(), put: ok(), delete: ok()};
+    api = {get: ok(), post: ok(), postNoToast: ok(), put: ok(), delete: ok(), getBlobData: ok()};
     service = new BackendConfigurationPnTailBiteService(api as any);
   });
 
@@ -94,5 +94,10 @@ describe('BackendConfigurationPnTailBiteService', () => {
     service.previewRule(input).subscribe();
     expect(api.postNoToast).toHaveBeenCalledWith(`${base}/rules/preview`, input);
     expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('getPhotoBlob fetches the photo bytes as a Blob by uuid', () => {
+    service.getPhotoBlob('5f0c2a3e-1b2c-4d5e-8f90-123456789abc').subscribe();
+    expect(api.getBlobData).toHaveBeenCalledWith(`${base}/photos/5f0c2a3e-1b2c-4d5e-8f90-123456789abc`);
   });
 });

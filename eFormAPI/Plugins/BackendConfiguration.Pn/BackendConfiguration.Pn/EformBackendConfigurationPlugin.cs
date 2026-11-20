@@ -138,12 +138,14 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddTransient<Services.TailBite.ITailBiteWorkerEmailCounter, Services.TailBite.TailBiteWorkerEmailCounter>();
         services.AddTransient<Services.TailBite.ITailBiteAccess, Services.TailBite.TailBiteAccess>();
         services.AddTransient<Services.TailBite.ITailBitePhotoStorage, Services.TailBite.TailBitePhotoStorage>();
+        services.AddTransient<Services.TailBite.ITailBitePhotoQuery, Services.TailBite.TailBitePhotoQuery>();
         services.AddTransient<Services.TailBite.ITailBiteRegistrationService, Services.TailBite.TailBiteRegistrationService>();
         services.AddTransient<Services.TailBite.ITailBiteSetupService, Services.TailBite.TailBiteSetupService>();
         services.AddTransient<Services.TailBite.ITailBiteOutbreakService, Services.TailBite.TailBiteOutbreakService>();
         services.AddTransient<Services.TailBite.ITailBitePushSender, Services.TailBite.TailBitePushSender>();
         services.AddTransient<Services.TailBite.ITailBiteOutbreakNotifier, Services.TailBite.TailBiteOutbreakNotifier>();
         services.AddTransient<Services.TailBite.ITailBiteWebQueryService, Services.TailBite.TailBiteWebQueryService>();
+        services.AddTransient<Services.TailBite.ITailBiteOutbreakPhotoService, Services.TailBite.TailBiteOutbreakPhotoService>();
         // flutter-chemistry: the inventory service, its readers and the chemicalbase client.
         services.AddChemicalInventory();
         // flutter-chemistry Plan E: the digest preview and (later) the reports.

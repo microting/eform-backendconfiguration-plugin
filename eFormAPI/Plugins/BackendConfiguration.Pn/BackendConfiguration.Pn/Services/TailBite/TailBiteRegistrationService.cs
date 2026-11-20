@@ -54,7 +54,7 @@ public interface ITailBiteRegistrationService
     /// </summary>
     Task<Guid> SavePhotoAsync(int callerSiteId, int propertyId, Guid photoUuid, Guid registrationClientUuid, byte[] bytes, string contentType);
 
-    /// <summary>Opens a photo for a worker of the photo's property.</summary>
+    /// <summary>Opens a photo for a worker of the photo's property; any refusal is NotFound.</summary>
     Task<(Stream Content, string ContentType)> GetPhotoAsync(int callerSiteId, Guid photoUuid);
 
     /// <summary>The caller's own registrations on the property since the given time, newest first.</summary>
@@ -68,6 +68,7 @@ public class TailBiteRegistrationService(
     ITailBiteDecisionWriter writer,
     ITailBiteAccess access,
     ITailBitePhotoStorage photoStorage,
+    ITailBitePhotoQuery photoQuery,
     TimeProvider clock,
     ITailBiteOutbreakNotifier? notifier = null,
     ILogger<TailBiteRegistrationService>? logger = null) : ITailBiteRegistrationService
@@ -409,10 +410,15 @@ public class TailBiteRegistrationService(
 
     public async Task<(Stream Content, string ContentType)> GetPhotoAsync(int callerSiteId, Guid photoUuid)
     {
-        var photo = await db.TailBiteRegistrationPhotos.AsNoTracking().Where(TailBitePhotoOwnership.IsStored)
-                        .FirstOrDefaultAsync(p => p.PhotoUuid == photoUuid && p.WorkflowState != Constants.WorkflowStates.Removed)
-                    ?? throw new TailBiteNotFoundException("Photo not found.");
-        await access.RequireWorkerAsync(callerSiteId, photo.PropertyId);
+        // The rule the web and the report apply too: a cancelled registration's photo or an orphan photo is not shown.
+        var photo = await photoQuery.FindShownAsync(photoUuid) ?? throw TailBiteNotFoundException.PhotoNotFound();
+        // Unknown, unstored, foreign and switched-off answer alike, so the call cannot be used to learn which uuids exist.
+        try
+        {
+            await access.RequireEnabledAsync(photo.PropertyId);
+            await access.RequireWorkerAsync(callerSiteId, photo.PropertyId);
+        }
+        catch (TailBiteForbiddenException) { throw TailBiteNotFoundException.PhotoNotFound(); }
         return await photoStorage.OpenAsync(photo.SdkUploadedDataId);
     }
 

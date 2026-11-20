@@ -42,7 +42,8 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
     private TailBiteWebQueryService Sut()
     {
         var access = NewAccess();
-        return new(Db, access, Resolver(), Clock, new TailBiteOutbreakService(Db, new TailBitePropertyLock(Db), access, Clock, CoreHelper()));
+        return new(Db, access, Resolver(), Clock, new TailBiteOutbreakService(Db, new TailBitePropertyLock(Db), access, Clock, CoreHelper()),
+            new TailBitePhotoQuery(Db));
     }
 
     // ---------- properties and workers ----------
@@ -298,7 +299,7 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         return outbreak;
     }
 
-    private async Task PhotoAsync(TailBiteRegistration reg, int uploadedBySiteId, int sdkUploadedDataId, bool removed = false)
+    private async Task<Guid> PhotoAsync(TailBiteRegistration reg, int uploadedBySiteId, int sdkUploadedDataId, bool removed = false)
     {
         var photo = new TailBiteRegistrationPhoto
         {
@@ -307,6 +308,7 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         };
         await photo.Create(Db);
         if (removed) await photo.Delete(Db);
+        return photo.PhotoUuid;
     }
 
     [Test]
@@ -341,6 +343,37 @@ public class TailBiteWebQueryServiceTests : TailBiteTestBase
         Assert.That(lateRow.EffectiveAt.Kind, Is.EqualTo(DateTimeKind.Utc));
         Assert.That(result.Rows[0].CancelReason, Is.EqualTo("Registreret på forkert sti"));
         Assert.That(result.ActionTypes, Is.EqualTo(new[] { new ActionTypeName(halm.Id, "Halm") }));
+    }
+
+    // Photos and PhotoCount apply the one rule of ITailBitePhotoQuery: owned, stored, live, and the registration not cancelled.
+    [Test]
+    public async Task OutbreakRegistrations_PhotosPerRegistration_CountFollowsTheCommonRule()
+    {
+        await SeedTreeAsync();
+        await SeedWorkerAsync(ManagerSite, manager: true);
+        var now = Clock.GetUtcNow().UtcDateTime;
+        var (twoPens, twoPenRows) = await SeedRegistrationAsync(now.AddHours(-1), false, (Pen309Id, 2, 0), (Pen310Id, 1, 1));
+        var (cancelled, cancelledRows) = await SeedRegistrationAsync(now.AddHours(-2), true, (Pen309Id, 3, 0));
+        var first = await PhotoAsync(twoPens, uploadedBySiteId: 7, sdkUploadedDataId: 61);
+        var second = await PhotoAsync(twoPens, uploadedBySiteId: 7, sdkUploadedDataId: 62);
+        await PhotoAsync(twoPens, uploadedBySiteId: 8, sdkUploadedDataId: 63);   // another site's upload: not counted
+        await PhotoAsync(cancelled, uploadedBySiteId: 7, sdkUploadedDataId: 64);
+        var outbreak = await OutbreakWithLinksAsync(StableAId, twoPenRows[0], twoPenRows[1], cancelledRows[0]);
+
+        var result = await Sut().OutbreakRegistrationsAsync(ManagerSite, outbreak.Id);
+
+        Assert.That(result.Photos.Select(p => (p.PhotoUuid, p.RegistrationId)), Is.EqualTo(new[]
+        {
+            (first, twoPens.Id), (second, twoPens.Id),
+        }));
+        Assert.That(result.Rows.Select(r => (r.RegistrationId, r.LocationId, r.PhotoCount)), Is.EqualTo(new[]
+        {
+            (cancelled.Id, Pen309Id, 0), (twoPens.Id, Pen309Id, 2), (twoPens.Id, Pen310Id, 2),
+        }));
+        // The host serialises with Newtonsoft: the SDK UploadedData id stays on the server.
+        var json = Newtonsoft.Json.JsonConvert.SerializeObject(result.Photos[0]);
+        Assert.That(json, Does.Not.Contain("UploadedDataId"));
+        Assert.That(json, Does.Contain(first.ToString()));
     }
 
     // A registration keeps its links to an action type deleted later; the page must still name it.

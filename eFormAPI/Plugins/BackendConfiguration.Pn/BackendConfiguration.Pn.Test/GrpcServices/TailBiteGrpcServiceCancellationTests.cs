@@ -23,7 +23,7 @@ public class TailBiteGrpcServiceCancellationTests
     private RecordingLogger _logger = null!;
 
     private TailBiteGrpcService Sut() => new(_access, _regs, Substitute.For<ITailBiteSetupService>(), _outbreaks,
-        Substitute.For<IGrpcSiteResolver>(), _logger);
+        Substitute.For<ITailBiteOutbreakPhotoService>(), Substitute.For<IGrpcSiteResolver>(), _logger);
 
     [SetUp]
     public void SetUp()

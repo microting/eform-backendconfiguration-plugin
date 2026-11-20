@@ -37,7 +37,7 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
     {
         db ??= Db;
         return new(db, new TailBitePropertyLock(db), new TailBiteSnapshotLoader(db), new TailBiteDecisionWriter(db), NewAccess(db),
-            new TailBitePhotoStorage(storage ?? new FakeAdhocPhotoStorage(), CoreHelper()), clock ?? Clock, notifier);
+            new TailBitePhotoStorage(storage ?? new FakeAdhocPhotoStorage(), CoreHelper()), new TailBitePhotoQuery(db), clock ?? Clock, notifier);
     }
 
     /// <summary>
@@ -376,15 +376,77 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
             () => sut.SavePhotoAsync(OtherSiteId, PropertyId, Guid.NewGuid(), regUuid, [3], "image/jpeg"));
     }
 
-    [Test]
-    public async Task GetPhoto_OtherProperty_Forbidden()
+    private static async Task AssertPhotoNotFound(Func<Task> call)
     {
+        var ex = await Assert.ThrowsAsync<TailBiteNotFoundException>(() => call());
+        Assert.That(ex!.Message, Is.EqualTo("Photo not found."));
+    }
+
+    [Test]
+    public async Task GetPhoto_UnknownUnstoredForeignAndSwitchedOff_AllAnswerTheSameNotFound()
+    {
+        // A stored photo of a live registration on the enabled tree: the caller is a worker there.
+        var (reg, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, false, (Pen309Id, 2, 0));
+        // One photo store for the save and every read: NewSut() alone gives each call an empty one.
+        var store = new FakeAdhocPhotoStorage();
+        TailBiteRegistrationService Sut() => NewSut(storage: store);
+        var stored = Guid.NewGuid();
+        await Sut().SavePhotoAsync(WorkerSiteId, PropertyId, stored, reg.ClientUuid, [1], "image/jpeg");
+        // A reservation whose bytes were never stored.
+        var reserved = Guid.NewGuid();
+        await SeedPhotoAsync(reserved, reg.ClientUuid);
+        // A stored photo of a live registration on a second, enabled property where the caller is no worker.
         var other = new Property { Name = "Ejendom To" };
         await other.Create(Db);
-        await new PropertyWorker { PropertyId = other.Id, WorkerId = OtherSiteId }.Create(Db); // works elsewhere only
+        await new TailBiteProperty { PropertyId = other.Id, Enabled = true, EnabledAt = Clock.GetUtcNow().UtcDateTime }.Create(Db);
+        await new PropertyWorker { PropertyId = other.Id, WorkerId = OtherSiteId }.Create(Db);
+        var otherReg = new TailBiteRegistration
+        {
+            PropertyId = other.Id, SiteId = OtherSiteId, ClientUuid = Guid.NewGuid(),
+            RegisteredAt = Clock.GetUtcNow().UtcDateTime, ReceivedAt = Clock.GetUtcNow().UtcDateTime, EffectiveAt = Clock.GetUtcNow().UtcDateTime
+        };
+        await otherReg.Create(Db);
+        var foreign = Guid.NewGuid();
+        await new TailBiteRegistrationPhoto
+        {
+            PhotoUuid = foreign, PropertyId = other.Id, UploadedBySiteId = OtherSiteId, RegistrationClientUuid = otherReg.ClientUuid,
+            SdkUploadedDataId = PhotoRow(stored).SdkUploadedDataId
+        }.Create(Db);
+        Db.ChangeTracker.Clear();
+        // Both photos are readable by their own workers, so the refusals below come from the caller and the switch alone.
+        await (await Sut().GetPhotoAsync(WorkerSiteId, stored)).Content.DisposeAsync();
+        await (await Sut().GetPhotoAsync(OtherSiteId, foreign)).Content.DisposeAsync();
+
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, Guid.NewGuid()));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, reserved));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, foreign));
+
+        await Db.TailBiteProperties.Where(t => t.PropertyId == PropertyId).ExecuteUpdateAsync(x => x.SetProperty(t => t.Enabled, false));
+        await AssertPhotoNotFound(() => Sut().GetPhotoAsync(WorkerSiteId, stored));
+    }
+
+    [Test]
+    public async Task GetPhoto_BytesGoneFromTheStore_NotFound()
+    {
+        // A reset local folder or a deleted S3 object reads like any other missing photo, not as a server error.
+        var (reg, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, false, (Pen309Id, 2, 0));
         var photo = Guid.NewGuid();
-        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, photo, Guid.NewGuid(), [1], "image/jpeg");
-        await Assert.ThrowsAsync<TailBiteForbiddenException>(() => NewSut().GetPhotoAsync(OtherSiteId, photo));
+        await NewSut(storage: new FakeAdhocPhotoStorage()).SavePhotoAsync(WorkerSiteId, PropertyId, photo, reg.ClientUuid, [1], "image/jpeg");
+
+        await AssertPhotoNotFound(() => NewSut(storage: new FakeAdhocPhotoStorage()).GetPhotoAsync(WorkerSiteId, photo));
+    }
+
+    [Test]
+    public async Task GetPhoto_CancelledRegistrationsPhoto_NotFound()
+    {
+        // The app applies the rule the web and the report do: a cancelled registration's photo and an orphan are not shown.
+        var (cancelled, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, true, (Pen309Id, 2, 0));
+        var (photo, orphan) = (Guid.NewGuid(), Guid.NewGuid());
+        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, photo, cancelled.ClientUuid, [1], "image/jpeg");
+        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, orphan, Guid.NewGuid(), [2], "image/jpeg");
+
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, photo));
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, orphan));
     }
 
     [Test]
@@ -580,6 +642,8 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
         var row = PhotoRow(photo);
         Assert.That(row.WorkflowState, Is.Not.EqualTo(Constants.WorkflowStates.Removed));
         Assert.That(row.SdkUploadedDataId, Is.EqualTo(expectedUploadedDataId).And.Not.Zero);
+        // A photo is shown once its registration exists.
+        await NewSut().CreateAsync(WorkerSiteId, Cmd(row.RegistrationClientUuid));
         var (content, _) = await NewSut(storage: storage).GetPhotoAsync(WorkerSiteId, photo);
         await using (content)
         {

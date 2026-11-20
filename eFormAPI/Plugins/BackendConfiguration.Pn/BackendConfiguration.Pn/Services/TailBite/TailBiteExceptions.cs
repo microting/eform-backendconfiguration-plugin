@@ -29,7 +29,14 @@ namespace BackendConfiguration.Pn.Services.TailBite;
 using System;
 
 public abstract class TailBiteException(string m, Exception? inner = null) : Exception(m, inner);
-public class TailBiteNotFoundException(string m) : TailBiteException(m);
+public class TailBiteNotFoundException(string m) : TailBiteException(m)
+{
+    /// <summary>
+    /// The one refusal for a photo the caller may not see, whatever the reason, so a photo method cannot be used to probe
+    /// which photo uuids exist.
+    /// </summary>
+    public static TailBiteNotFoundException PhotoNotFound() => new("Photo not found.");
+}
 
 public class TailBiteForbiddenException(string m) : TailBiteException(m)
 {

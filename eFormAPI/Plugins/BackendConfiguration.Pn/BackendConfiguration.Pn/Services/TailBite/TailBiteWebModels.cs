@@ -56,5 +56,7 @@ public sealed record OutbreakRegistrationRow(int RegistrationId, int RowId, int 
 public sealed record ActionTypeName(int Id, string Name);
 
 // The outbreak's property travels with its rows, so the page can load the tree, workers and pig counts it needs.
+// Photos lists each shown photo once per registration (JSON: photoUuid, registrationId), oldest first; a row's PhotoCount
+// counts the same photos, so a registration covering several pens repeats it on each of its rows.
 public sealed record OutbreakRegistrations(int PropertyId, IReadOnlyList<OutbreakRegistrationRow> Rows,
-    IReadOnlyList<ActionTypeName> ActionTypes);
+    IReadOnlyList<ActionTypeName> ActionTypes, IReadOnlyList<RegistrationPhoto> Photos);

@@ -185,4 +185,15 @@ export class BackendConfigurationPnTailBiteService {
   cancelRegistration(registrationId: number, reason: string): Observable<OperationResult> {
     return this.apiBaseService.put(this.url(`registrations/${registrationId}/cancel`), {reason});
   }
+
+  // ---------- photos ----------
+
+  /**
+   * The bytes of a photo an outbreak shows (TailBitePhotosController; manager only, a bare 404 otherwise). The host's
+   * HttpErrorInterceptor retries a 404 and then completes WITHOUT a value or an error, and toasts nothing: a caller
+   * must treat completing empty as a failure.
+   */
+  getPhotoBlob(photoUuid: string): Observable<Blob> {
+    return this.apiBaseService.getBlobData(this.url(`photos/${photoUuid}`));
+  }
 }

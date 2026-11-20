@@ -8,6 +8,7 @@ import {ActivatedRoute, Router, convertToParamMap} from '@angular/router';
 import {TranslateService} from '@ngx-translate/core';
 import {BehaviorSubject, NEVER, Subject, of, throwError} from 'rxjs';
 import {BackendConfigurationPnTailBiteService} from '../../../../services';
+import {TailBitePhotoViewerComponent} from '../tail-bite-photo-viewer/tail-bite-photo-viewer.component';
 import {TailBiteOutbreakDetailComponent} from './tail-bite-outbreak-detail.component';
 
 describe('TailBiteOutbreakDetailComponent', () => {
@@ -36,7 +37,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
   beforeEach(() => {
     service = {
       getOutbreak: vi.fn().mockReturnValue(detail()),
-      getOutbreakRegistrations: vi.fn().mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}})),
+      getOutbreakRegistrations: vi.fn().mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], photos: [], rows: [regRow]}})),
       getTree: vi.fn().mockReturnValue(of({success: true, model: tree})),
       // The managers dialog's admin list: the outbreak page must never call it (a manager may lack DeviceUsers.Update).
       getWorkers: vi.fn(),
@@ -45,6 +46,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
       getRuleHistory: vi.fn().mockReturnValue(of({success: true, model: []})),
       closeOutbreak: vi.fn().mockReturnValue(of({success: true})),
       cancelRegistration: vi.fn().mockReturnValue(of({success: true})),
+      getPhotoBlob: vi.fn().mockReturnValue(of(new Blob(['x'], {type: 'image/jpeg'}))),
     };
     dialogOpen = vi.fn();
     navigate = vi.fn();
@@ -148,7 +150,7 @@ describe('TailBiteOutbreakDetailComponent', () => {
       service.getOutbreakRegistrations.mockReturnValue(throwError(() => new Error('down')));
       component.load();
       expect(component.view!.title).toBe('Stald A');
-      service.getOutbreakRegistrations.mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], rows: [regRow]}}));
+      service.getOutbreakRegistrations.mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [], photos: [], rows: [regRow]}}));
       service.getTree.mockReturnValue(of({success: false, message: 'no'}));
       component.load();
       expect(component.view!.title).toBe('Stald A');
@@ -327,6 +329,43 @@ describe('TailBiteOutbreakDetailComponent', () => {
       running.next({success: true});
       running.complete();
       expect(component.busy).toBe(false);
+    });
+  });
+
+  describe('photos', () => {
+    const withPhotos = () => {
+      const older = {...regRow, registrationId: 22, rowId: 220, effectiveAt: '2026-09-29T05:58:00Z'};
+      service.getOutbreakRegistrations.mockReturnValue(of({success: true, model: {propertyId: 3, actionTypes: [],
+        photos: [{photoUuid: 'p1', registrationId: 22}, {photoUuid: 'p2', registrationId: 21}, {photoUuid: 'p3', registrationId: 21}],
+        rows: [regRow, older]}}));
+      component.load();
+    };
+
+    it('opens the viewer at the clicked photo, over the whole gallery and the page\'s fetched photos', () => {
+      withPhotos();
+      expect(component.view!.gallery.map((g) => g.uuid)).toEqual(['p2', 'p3', 'p1']);
+      component.openPhoto('p3');
+      expect(dialogOpen).toHaveBeenCalledTimes(1);
+      const [type, config] = dialogOpen.mock.calls[0];
+      expect(type).toBe(TailBitePhotoViewerComponent);
+      expect(config.data.index).toBe(1);
+      expect(config.data.items).toBe(component.view!.gallery);
+      expect(config.data.blobs).toBe(component.photoBlobs);
+      expect(config.disableClose).toBe(false);
+    });
+
+    it('does not open the viewer for a photo the page does not show', () => {
+      withPhotos();
+      component.openPhoto('gone');
+      expect(dialogOpen).not.toHaveBeenCalled();
+    });
+
+    it('keeps the fetched photos over a refresh, and starts afresh for another outbreak', () => {
+      const first = component.photoBlobs;
+      component.load();
+      expect(component.photoBlobs).toBe(first);
+      params.next(convertToParamMap({propertyId: '3', id: '6'}));
+      expect(component.photoBlobs).not.toBe(first);
     });
   });
 });

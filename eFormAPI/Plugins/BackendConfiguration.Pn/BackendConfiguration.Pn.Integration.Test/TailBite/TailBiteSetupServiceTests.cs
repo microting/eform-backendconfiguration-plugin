@@ -74,7 +74,8 @@ public class TailBiteSetupServiceTests : TailBiteTestBase
         Assert.That(await Sut().ListEnabledPropertiesAsync(ManagerSite), Is.Empty);
 
         var registrations = new TailBiteRegistrationService(Db, new TailBitePropertyLock(Db), new TailBiteSnapshotLoader(Db),
-            new TailBiteDecisionWriter(Db), NewAccess(), new TailBitePhotoStorage(new FakeAdhocPhotoStorage(), CoreHelper()), Clock, null);
+            new TailBiteDecisionWriter(Db), NewAccess(), new TailBitePhotoStorage(new FakeAdhocPhotoStorage(), CoreHelper()),
+            new TailBitePhotoQuery(Db), Clock, null);
         await Assert.ThrowsAsync<TailBiteConflictException>(() => registrations.CreateAsync(ManagerSite,
             new CreateRegistrationCommand(Guid.NewGuid(), PropertyId, Clock.GetUtcNow().UtcDateTime,
                 [new RegistrationLocationInput(Pen309Id, 2, 0)], [], null)));

@@ -1,0 +1,50 @@
+<div mat-dialog-title class="d-flex flex-row align-items-center justify-content-between gap-12">
+  <span id="tailBitePhotoViewerTitle">{{ 'Photo {{n}} of {{total}}' | translate: {n: index + 1, total: data.items.length} }}</span>
+  <button
+    mat-icon-button
+    mat-dialog-close
+    id="tailBitePhotoViewerClose"
+    [attr.aria-label]="'Close' | translate"
+    [matTooltip]="'Close' | translate"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+<div mat-dialog-content class="tail-bite-photo-viewer-stage">
+  <img *ngIf="url" id="tailBitePhotoViewerImg" class="tail-bite-photo-viewer-img" [src]="url" alt="" (error)="onImageError()" />
+  <div *ngIf="failed" id="tailBitePhotoViewerFailed" class="tail-bite-photo-viewer-failed">
+    <mat-icon>broken_image</mat-icon>
+    <span>{{ 'The photo could not be loaded' | translate }}</span>
+  </div>
+</div>
+<div mat-dialog-actions class="d-flex flex-row flex-nowrap align-items-center gap-12">
+  <button
+    mat-icon-button
+    id="tailBitePhotoViewerPrevious"
+    [disabled]="data.items.length < 2"
+    [attr.aria-label]="'Previous photo' | translate"
+    [matTooltip]="'Previous photo' | translate"
+    (click)="previous()"
+  >
+    <mat-icon>chevron_left</mat-icon>
+  </button>
+  <div class="flex-grow-1" id="tailBitePhotoViewerCaption">
+    <ng-container *ngIf="item as shown">
+      {{ shown.effectiveAt | date: 'dd.MM HH:mm' }} · {{ shown.pens }} · {{ shown.siteName }}
+    </ng-container>
+  </div>
+  <a *ngIf="url" id="tailBitePhotoViewerDownload" class="btn-quiet" [href]="url" [attr.download]="fileName">
+    <mat-icon>download</mat-icon>
+    {{ 'Download photo' | translate }}
+  </a>
+  <button
+    mat-icon-button
+    id="tailBitePhotoViewerNext"
+    [disabled]="data.items.length < 2"
+    [attr.aria-label]="'Next photo' | translate"
+    [matTooltip]="'Next photo' | translate"
+    (click)="next()"
+  >
+    <mat-icon>chevron_right</mat-icon>
+  </button>
+</div>
