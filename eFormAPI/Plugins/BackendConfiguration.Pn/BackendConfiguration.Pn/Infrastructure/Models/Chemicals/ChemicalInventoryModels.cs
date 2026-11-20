@@ -70,6 +70,14 @@ public sealed record ChemicalPlacementChangeModel(
     IReadOnlyList<ChemicalStockEntryModel> StockEntries,
     IReadOnlyList<ChemicalRegisterEntryModel> RegisterEntries);
 
+/// <summary>
+/// The W6 location filter under the picker's "All": every visible property (its name) and its locations, archived
+/// ones included. Light on purpose: no placements, stock entries or register entries.
+/// </summary>
+public sealed record ChemicalPropertyLocationsModel(
+    IReadOnlyList<ChemicalPropertyAccessModel> Properties,
+    IReadOnlyList<ChemicalLocationModel> Locations);
+
 public sealed record ChemicalInventoryModel(
     IReadOnlyList<ChemicalPropertyAccessModel> Properties,
     IReadOnlyList<ChemicalLocationModel> Locations,

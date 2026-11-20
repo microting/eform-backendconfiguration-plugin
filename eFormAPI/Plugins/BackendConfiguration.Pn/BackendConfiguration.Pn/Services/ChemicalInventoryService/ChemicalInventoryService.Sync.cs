@@ -66,6 +66,17 @@ public partial class ChemicalInventoryService
         return await BuildInventoryAsync(access, null, UtcNow(), string.Empty).ConfigureAwait(false);
     }
 
+    public async Task<ChemicalPropertyLocationsModel> GetAllPropertiesLocationsAsync(ChemicalCaller caller)
+    {
+        var access = (await permissions.ListVisiblePropertiesAsync(caller).ConfigureAwait(false)).Select(a => a.Access).ToList();
+        var propertyIds = access.Select(a => a.PropertyId).ToArray();
+        var locations = await dbContext.ChemicalLocations.AsNoTracking()
+            .Where(l => propertyIds.Contains(l.PropertyId))
+            .OrderBy(l => l.PropertyId).ThenBy(l => l.SortOrder).ThenBy(l => l.Id)
+            .ToListAsync().ConfigureAwait(false);
+        return new ChemicalPropertyLocationsModel(access, locations.Select(MapLocation).ToList());
+    }
+
     /// <summary>
     /// The visible properties (always complete), and the locations, placements,
     /// entries and register entries that changed after <paramref name="sinceUtc"/>

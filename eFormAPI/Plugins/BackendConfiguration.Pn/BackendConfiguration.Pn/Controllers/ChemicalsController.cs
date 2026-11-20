@@ -87,6 +87,11 @@ public class ChemicalsController(
     public Task<OperationDataResult<ChemicalInventoryModel>> GetAllPropertiesInventory() =>
         ExecuteAsync(() => inventory.GetAllPropertiesInventoryAsync(Caller), ReadingChemicals);
 
+    /// <summary>The W6 location filter under "All": the visible properties and their locations, without the inventory.</summary>
+    [HttpGet("locations")]
+    public Task<OperationDataResult<ChemicalPropertyLocationsModel>> GetAllPropertiesLocations() =>
+        ExecuteAsync(() => inventory.GetAllPropertiesLocationsAsync(Caller), ReadingChemicals);
+
     [HttpGet("register/search")]
     public Task<OperationDataResult<ChemicalRegisterPageModel>> SearchRegister(
         [FromQuery] string query, [FromQuery] int page = 0, [FromQuery] int pageSize = 25) =>

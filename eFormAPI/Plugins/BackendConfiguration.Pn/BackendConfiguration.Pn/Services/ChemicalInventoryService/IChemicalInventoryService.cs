@@ -73,6 +73,9 @@ public interface IChemicalInventoryService
     /// </summary>
     Task<ChemicalInventoryModel> GetAllPropertiesInventoryAsync(ChemicalCaller caller);
 
+    /// <summary>The locations (archived included) of every property the caller may view, with the properties; same visibility.</summary>
+    Task<ChemicalPropertyLocationsModel> GetAllPropertiesLocationsAsync(ChemicalCaller caller);
+
     // ---- register-wide (View on any property) ----
     Task<IReadOnlyList<ChemicalRegisterEntryModel>> LookupBarcodeAsync(ChemicalCaller caller, string barcode);
     Task<ChemicalRegisterPageModel> SearchRegisterAsync(ChemicalCaller caller, string query, int page, int pageSize);

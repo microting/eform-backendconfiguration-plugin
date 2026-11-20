@@ -37,7 +37,7 @@ using BmdTexts = Microting.EformBackendConfigurationBase.Infrastructure.Const.Co
 /// <summary>
 /// W6 "Historik" (spec §5.1: history is read from the version tables, stock
 /// entries and ChemicalAlertLog; nothing is edited in place). Derived per request
-/// for one property and one period (Plan E decision 5).
+/// for one property, or the picker's "All" (every visible property in one pass), and one period (Plan E decision 5).
 /// </summary>
 public class ChemicalHistoryService(
     BackendConfigurationPnDbContext dbContext,
@@ -50,16 +50,16 @@ public class ChemicalHistoryService(
     private const string Removed = Constants.WorkflowStates.Removed;
 
     public async Task<ChemicalHistoryPageModel> GetPageAsync(int propertyId, ChemicalHistoryQuery query) =>
-        Page(await LoadAsync(propertyId, query).ConfigureAwait(false), query);
+        Page(await LoadAsync([propertyId], query, mustExist: true).ConfigureAwait(false), query);
 
     public async Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllAsync(int propertyId, ChemicalHistoryQuery query) =>
-        Filter(await LoadAsync(propertyId, query).ConfigureAwait(false), query).ToList();
+        Filter(await LoadAsync([propertyId], query, mustExist: true).ConfigureAwait(false), query).ToList();
 
     public async Task<ChemicalHistoryPageModel> GetPageForPropertiesAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query) =>
-        Page(await LoadManyAsync(propertyIds, query).ConfigureAwait(false), query);
+        Page(await LoadAsync(propertyIds, query, mustExist: false).ConfigureAwait(false), query);
 
     public async Task<IReadOnlyList<ChemicalHistoryEventModel>> GetAllForPropertiesAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query) =>
-        Filter(await LoadManyAsync(propertyIds, query).ConfigureAwait(false), query).ToList();
+        Filter(await LoadAsync(propertyIds, query, mustExist: false).ConfigureAwait(false), query).ToList();
 
     /// <summary>The users of the whole period (for the filter), then the filtered events of one page.</summary>
     private static ChemicalHistoryPageModel Page(IReadOnlyList<ChemicalHistoryEventModel> all, ChemicalHistoryQuery query)
@@ -73,31 +73,6 @@ public class ChemicalHistoryService(
         var size = Math.Clamp(query.PageSize, 1, MaxPageSize);
         var page = Math.Max(query.Page, 0);
         return new ChemicalHistoryPageModel(filtered.Skip(page * size).Take(size).ToList(), filtered.Count, users);
-    }
-
-    /// <summary>
-    /// The logs of several properties merged newest first, with the same keys as one property's log. The sort is
-    /// stable and the properties are read in name order, so a tie keeps each log's own order and paging stays
-    /// deterministic. One property at a time: each log is derived per property (Plan E decision 5).
-    /// </summary>
-    private async Task<List<ChemicalHistoryEventModel>> LoadManyAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query)
-    {
-        Period(query);
-        var ids = propertyIds.ToArray();
-        var existing = await dbContext.Properties.AsNoTracking()
-            .Where(p => ids.Contains(p.Id) && p.WorkflowState != Removed)
-            .OrderBy(p => p.Name).ThenBy(p => p.Id)
-            .Select(p => p.Id)
-            .ToListAsync().ConfigureAwait(false);
-        var events = new List<ChemicalHistoryEventModel>();
-        foreach (var propertyId in existing)
-        {
-            events.AddRange(await LoadAsync(propertyId, query).ConfigureAwait(false));
-        }
-
-        return events
-            .OrderByDescending(e => e.At).ThenByDescending(e => e.Action).ThenByDescending(e => e.PlacementId)
-            .ToList();
     }
 
     private static IEnumerable<ChemicalHistoryEventModel> Filter(IEnumerable<ChemicalHistoryEventModel> events, ChemicalHistoryQuery query) =>
@@ -130,19 +105,33 @@ public class ChemicalHistoryService(
 
     private static DateTime LocalDay(DateTime utc) => ChemicalCopenhagen.ToCopenhagen(utc).Date;
 
-    private async Task<List<ChemicalHistoryEventModel>> LoadAsync(int propertyId, ChemicalHistoryQuery query)
+    /// <summary>
+    /// The log of <paramref name="requestedIds"/> in one pass: every source is read once for all of them (the picker's
+    /// "All" costs the same round-trips as one property), and each event names the property of its row. One property's
+    /// events keep the order and the keys they have alone. Removed or unknown ids are skipped, unless
+    /// <paramref name="mustExist"/> (one property asked by id): then NotFound.
+    /// </summary>
+    private async Task<List<ChemicalHistoryEventModel>> LoadAsync(IReadOnlyCollection<int> requestedIds, ChemicalHistoryQuery query, bool mustExist)
     {
         var (from, to) = Period(query);
-        var property = await dbContext.Properties.AsNoTracking()
-            .Where(p => p.Id == propertyId && p.WorkflowState != Removed)
-            .Select(p => new { p.Name }).FirstOrDefaultAsync().ConfigureAwait(false)
-            ?? throw new ChemicalNotFoundException($"Property {propertyId} not found.");
-        var propertyName = property.Name ?? string.Empty;
+        var requested = requestedIds.ToArray();
+        var propertyNames = requested.Length == 0
+            ? []
+            : await dbContext.Properties.AsNoTracking()
+                .Where(p => requested.Contains(p.Id) && p.WorkflowState != Removed)
+                .Select(p => new { p.Id, p.Name })
+                .ToDictionaryAsync(p => p.Id, p => p.Name ?? string.Empty).ConfigureAwait(false);
+        if (propertyNames.Count == 0)
+        {
+            return mustExist ? throw new ChemicalNotFoundException($"Property {requested.FirstOrDefault()} not found.") : [];
+        }
+
+        var propertyIds = propertyNames.Keys.ToArray();
 
         bool InPeriod(DateTime? at) => at is { } value && value >= from && value < to;
 
         var locations = await dbContext.ChemicalLocations.AsNoTracking()
-            .Where(l => l.PropertyId == propertyId).OrderBy(l => l.Id).ToDictionaryAsync(l => l.Id).ConfigureAwait(false);
+            .Where(l => propertyIds.Contains(l.PropertyId)).OrderBy(l => l.Id).ToDictionaryAsync(l => l.Id).ConfigureAwait(false);
         var locationIds = locations.Keys.ToArray();
         var placements = await dbContext.ChemicalPlacements.AsNoTracking()
             .Where(p => locationIds.Contains(p.LocationId) && p.WorkflowState != Removed).OrderBy(p => p.Id)
@@ -154,11 +143,11 @@ public class ChemicalHistoryService(
         var placementVersions = await dbContext.ChemicalPlacementVersions.AsNoTracking()
             .Where(v => placementIds.Contains(v.ChemicalPlacementId)).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
         var locationVersions = await dbContext.ChemicalLocationVersions.AsNoTracking()
-            .Where(v => v.PropertyId == propertyId).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
+            .Where(v => propertyIds.Contains(v.PropertyId)).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
         var permissionVersions = await dbContext.ChemicalWorkerPermissionVersions.AsNoTracking()
-            .Where(v => v.PropertyId == propertyId).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
+            .Where(v => propertyIds.Contains(v.PropertyId)).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
         var settingsVersions = await dbContext.ChemicalPropertySettingsVersions.AsNoTracking()
-            .Where(v => v.PropertyId == propertyId).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
+            .Where(v => propertyIds.Contains(v.PropertyId)).OrderBy(v => v.Id).ToListAsync().ConfigureAwait(false);
         var alerts = await dbContext.ChemicalAlertLogs.AsNoTracking()
             .Where(a => placementIds.Contains(a.PlacementId) && a.SentAt >= from && a.SentAt < to && a.WorkflowState != Removed)
             .OrderBy(a => a.Id).ToListAsync().ConfigureAwait(false);
@@ -181,6 +170,8 @@ public class ChemicalHistoryService(
         {
             At = at, UserId = userId, Action = action, PlacementId = p.Id, ChemicalId = p.ChemicalId,
             LocationId = p.LocationId, LocationName = LocationName(p.LocationId),
+            // Placements are read through the locations, so the location is always there.
+            PropertyId = locations[p.LocationId].PropertyId,
         };
 
         var events = new List<ChemicalHistoryEventModel>();
@@ -258,6 +249,7 @@ public class ChemicalHistoryService(
         ChemicalHistoryEventModel ForLocation(ChemicalLocationVersion v, ChemicalHistoryActionEnum action) => new()
         {
             At = v.UpdatedAt!.Value, UserId = v.UpdatedByUserId, Action = action, LocationId = v.ChemicalLocationId, LocationName = v.Name,
+            PropertyId = v.PropertyId,
         };
 
         foreach (var versions in locationVersions.GroupBy(v => v.ChemicalLocationId))
@@ -309,31 +301,35 @@ public class ChemicalHistoryService(
                     {
                         At = current.UpdatedAt!.Value, UserId = current.UpdatedByUserId, Action = ChemicalHistoryActionEnum.PermissionChanged,
                         WorkerName = workerNames.GetValueOrDefault(current.WorkerId, string.Empty),
-                        PermissionsAdded = added, PermissionsRemoved = removed,
+                        PermissionsAdded = added, PermissionsRemoved = removed, PropertyId = current.PropertyId,
                     });
                 }
             }
         }
 
-        ChemicalPropertySettingsVersion previousSettings = null;
-        foreach (var current in settingsVersions)
+        // Each property's settings history on its own: its first version is compared with nothing.
+        foreach (var versions in settingsVersions.GroupBy(v => v.PropertyId))
         {
-            var oldStock = previousSettings?.StockEnabled ?? false;
-            var oldRecipients = previousSettings?.DigestRecipients ?? string.Empty;
-            previousSettings = current;
-            if (!InPeriod(current.UpdatedAt))
+            ChemicalPropertySettingsVersion previousSettings = null;
+            foreach (var current in versions)
             {
-                continue;
-            }
+                var oldStock = previousSettings?.StockEnabled ?? false;
+                var oldRecipients = previousSettings?.DigestRecipients ?? string.Empty;
+                previousSettings = current;
+                if (!InPeriod(current.UpdatedAt))
+                {
+                    continue;
+                }
 
-            if (oldStock != current.StockEnabled)
-            {
-                events.Add(Setting(current, "StockEnabled", oldStock ? "true" : "false", current.StockEnabled ? "true" : "false"));
-            }
+                if (oldStock != current.StockEnabled)
+                {
+                    events.Add(Setting(current, "StockEnabled", oldStock ? "true" : "false", current.StockEnabled ? "true" : "false"));
+                }
 
-            if (oldRecipients != (current.DigestRecipients ?? string.Empty))
-            {
-                events.Add(Setting(current, "DigestRecipients", oldRecipients, current.DigestRecipients ?? string.Empty));
+                if (oldRecipients != (current.DigestRecipients ?? string.Empty))
+                {
+                    events.Add(Setting(current, "DigestRecipients", oldRecipients, current.DigestRecipients ?? string.Empty));
+                }
             }
         }
 
@@ -377,8 +373,7 @@ public class ChemicalHistoryService(
                 ProductName = ProductName(e.ChemicalId),
                 RegistrationNo = RegistrationNo(e.ChemicalId),
                 UserName = UserName(e.UserId),
-                PropertyId = propertyId,
-                PropertyName = propertyName,
+                PropertyName = propertyNames[e.PropertyId],
             }, Seq: seq))
             .OrderByDescending(x => x.Event.At).ThenByDescending(x => x.Event.Action).ThenByDescending(x => x.Event.PlacementId)
             .ThenBy(x => x.Seq)
@@ -389,7 +384,7 @@ public class ChemicalHistoryService(
     private static ChemicalHistoryEventModel Setting(ChemicalPropertySettingsVersion v, string field, string oldValue, string newValue) => new()
     {
         At = v.UpdatedAt!.Value, UserId = v.UpdatedByUserId, Action = ChemicalHistoryActionEnum.SettingsChanged,
-        Field = field, OldValue = oldValue, NewValue = newValue,
+        Field = field, OldValue = oldValue, NewValue = newValue, PropertyId = v.PropertyId,
     };
 
     private static List<string> Flags(ChemicalWorkerPermissionVersion v) =>
