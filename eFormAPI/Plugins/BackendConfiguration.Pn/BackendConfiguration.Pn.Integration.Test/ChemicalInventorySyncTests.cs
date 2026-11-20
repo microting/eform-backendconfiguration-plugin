@@ -182,4 +182,70 @@ public class ChemicalInventorySyncTests : ChemicalTestBase
         Assert.That(inventory.Placements, Has.Count.EqualTo(2));
         Assert.That(inventory.SyncToken, Is.Empty);
     }
+
+    [Test]
+    public async Task AllPropertiesInventory_ForAWorker_HoldsOnlyThePropertiesTheWorkerMayView()
+    {
+        var w = await ArrangeAsync();
+
+        var inventory = await CreateInventoryService().GetAllPropertiesInventoryAsync(w.Caller);
+
+        Assert.That(inventory.Properties.Select(p => p.PropertyId), Is.EqualTo(new[] { w.PropertyId }), "Register alone is not View");
+        Assert.That(inventory.Locations.Select(l => l.PropertyId), Is.All.EqualTo(w.PropertyId));
+        Assert.That(inventory.Placements.Select(p => p.Id), Is.EquivalentTo(new[] { w.PlacementId, w.OtherPlacementId }));
+        Assert.That(inventory.Full, Is.True);
+        Assert.That(inventory.SyncToken, Is.Empty);
+    }
+
+    [Test]
+    public async Task AllPropertiesInventory_ForAWebAdmin_HoldsEveryProperty_EachPlacementWithItsProperty()
+    {
+        var w = await ArrangeAsync();
+        var hiddenLocation = await CreateLocationAsync(w.HiddenPropertyId, "Skur", 2);
+        var hiddenPlacement = await CreatePlacementAsync(hiddenLocation.Id, w.Chemical.ChemicalId);
+
+        var inventory = await CreateInventoryService().GetAllPropertiesInventoryAsync(ChemicalCaller.Web(TestUserId));
+
+        Assert.That(inventory.Properties.Select(p => p.PropertyId), Is.SupersetOf(new[] { w.PropertyId, w.HiddenPropertyId }));
+        Assert.That(inventory.Placements.Select(p => p.Id), Is.SupersetOf(new[] { w.PlacementId, w.OtherPlacementId, hiddenPlacement.Id }));
+        Assert.That(inventory.Placements.Single(p => p.Id == hiddenPlacement.Id).PropertyId, Is.EqualTo(w.HiddenPropertyId));
+        Assert.That(inventory.Locations.Single(l => l.Id == hiddenLocation.Id).PropertyId, Is.EqualTo(w.HiddenPropertyId));
+        Assert.That(inventory.SyncToken, Is.Empty);
+    }
+
+    [Test]
+    public async Task AllPropertiesInventory_ForAWorkerWithoutView_IsEmpty()
+    {
+        var (_, _, caller) = await WorkerWith(ChemicalPermissionFlagsModel.None with { Register = true });
+
+        var inventory = await CreateInventoryService().GetAllPropertiesInventoryAsync(caller);
+
+        Assert.That(inventory.Properties, Is.Empty);
+        Assert.That(inventory.Placements, Is.Empty);
+    }
+
+    [Test]
+    public async Task AllPropertiesLocations_ForAWorker_HoldsTheLocationsOfTheVisiblePropertiesOnly_ArchivedIncluded()
+    {
+        var w = await ArrangeAsync();
+
+        var model = await CreateInventoryService().GetAllPropertiesLocationsAsync(w.Caller);
+
+        Assert.That(model.Properties.Select(p => p.PropertyId), Is.EqualTo(new[] { w.PropertyId }));
+        Assert.That(model.Locations.Select(l => l.Id), Is.EquivalentTo(new[] { w.LocationId, w.ArchivedLocationId }));
+        Assert.That(model.Locations.Single(l => l.Id == w.ArchivedLocationId).Archived, Is.True);
+    }
+
+    [Test]
+    public async Task AllPropertiesLocations_ForAWebAdmin_HoldsEveryProperty_WithItsName()
+    {
+        var w = await ArrangeAsync();
+        var hiddenLocation = await CreateLocationAsync(w.HiddenPropertyId, "Skur", 2);
+
+        var model = await CreateInventoryService().GetAllPropertiesLocationsAsync(ChemicalCaller.Web(TestUserId));
+
+        Assert.That(model.Properties.Select(p => p.PropertyId), Is.SupersetOf(new[] { w.PropertyId, w.HiddenPropertyId }));
+        Assert.That(model.Properties.Single(p => p.PropertyId == w.HiddenPropertyId).Name, Does.StartWith("Property "));
+        Assert.That(model.Locations.Single(l => l.Id == hiddenLocation.Id).PropertyId, Is.EqualTo(w.HiddenPropertyId));
+    }
 }

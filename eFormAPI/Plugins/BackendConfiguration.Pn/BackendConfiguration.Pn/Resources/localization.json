@@ -8401,6 +8401,37 @@
     }
   },
   {
+    "Key": "ChemicalAllProperties",
+    "LocalizedValue": {
+      "en-US": "All properties",
+      "da": "Alle ejendomme",
+      "de": "Alle Liegenschaften",
+      "uk-UA": "Усі об'єкти нерухомості",
+      "pl-PL": "Wszystkie nieruchomości",
+      "no-NO": "Alle eiendommer",
+      "sv-SE": "Alla fastigheter",
+      "es-ES": "Todas las propiedades",
+      "fr-FR": "Toutes les propriétés",
+      "it-IT": "Tutte le proprietà",
+      "nl-NL": "Alle eigendommen",
+      "pt-BR": "Todas as propriedades",
+      "pt-PT": "Todas as propriedades",
+      "fi-FI": "Kaikki kiinteistöt",
+      "et-ET": "Kõik kinnistud",
+      "lv-LV": "Visi īpašumi",
+      "lt-LT": "Visas nekilnojamasis turtas",
+      "ro-RO": "Toate proprietățile",
+      "hr-HR": "Sve nekretnine",
+      "sl-SL": "Vse nepremičnine",
+      "cs-CZ": "Všechny nemovitosti",
+      "sk-SK": "Všetky nehnuteľnosti",
+      "hu-HU": "Minden ingatlan",
+      "bg-BG": "Всички имоти",
+      "el-GR": "Όλες οι ιδιοκτησίες",
+      "is-IS": "Allar eignir"
+    }
+  },
+  {
     "Key": "ChemicalGeneratedLabel",
     "LocalizedValue": {
       "en-US": "Printed",

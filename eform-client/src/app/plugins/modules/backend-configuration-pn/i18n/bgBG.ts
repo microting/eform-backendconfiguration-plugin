@@ -920,6 +920,7 @@ export const bgBG = {
   'Chemicals: Export authority list': 'Списък на химикалите за Органа по работна среда (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) на текущия филтър',
   'Chemicals: Export removed placements': 'Химикали, отстранени през последните 12 месеца (Excel)',
+  'Chemicals: Select a property to export': 'Изберете имот, за да експортирате',
   'Chemicals: Register placement': 'Регистрирайте химикал на дадено място',
   'Chemicals: Search inventory hint': 'Продукт, регистрационен номер, място за съхранение',
   'Chemicals: No placements': 'Тук все още не са регистрирани химикали.',

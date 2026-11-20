@@ -63,6 +63,8 @@ public static class ChemicalLocalizationKeys
     public const string ChemicalRemovedPlacementsTitle = "ChemicalRemovedPlacementsTitle";
     public const string ChemicalHistoryTitle = "ChemicalHistoryTitle";
     public const string ChemicalPropertyLabel = "ChemicalPropertyLabel";
+    /// <summary>The file name part of an "All properties" export (W1/W6 picker's "All").</summary>
+    public const string ChemicalAllProperties = "ChemicalAllProperties";
     public const string ChemicalGeneratedLabel = "ChemicalGeneratedLabel";
     public const string ChemicalColumnProduct = "ChemicalColumnProduct";
     public const string ChemicalColumnRegistrationNo = "ChemicalColumnRegistrationNo";
@@ -124,7 +126,7 @@ public static class ChemicalLocalizationKeys
     [
         ErrorWhileReadingChemicalHistory, ErrorWhileExportingChemicals, ChemicalAuthorityListTitle,
         ChemicalInventoryExportTitle, ChemicalRemovedPlacementsTitle, ChemicalHistoryTitle, ChemicalPropertyLabel,
-        ChemicalGeneratedLabel, ChemicalColumnProduct, ChemicalColumnRegistrationNo, ChemicalColumnStatus,
+        ChemicalAllProperties, ChemicalGeneratedLabel, ChemicalColumnProduct, ChemicalColumnRegistrationNo, ChemicalColumnStatus,
         ChemicalColumnSignalWord, ChemicalColumnPictograms, ChemicalColumnHazardStatements, ChemicalColumnLocation,
         ChemicalColumnPlacement, ChemicalColumnDeadlines, ChemicalColumnQuantity, ChemicalColumnSds,
         ChemicalColumnUnit, ChemicalColumnSalesDeadline, ChemicalColumnUseAndPossessionDeadline,

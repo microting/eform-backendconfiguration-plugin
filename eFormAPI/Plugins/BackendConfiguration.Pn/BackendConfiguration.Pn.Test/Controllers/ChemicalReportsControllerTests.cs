@@ -51,6 +51,9 @@ public class ChemicalReportsControllerTests
     [
         "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/exports/authority-list",
         "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/exports/removed-placements",
+        "POST api/backend-configuration-pn/chemicals/exports/inventory",
+        "POST api/backend-configuration-pn/chemicals/history",
+        "POST api/backend-configuration-pn/chemicals/history/export",
         "POST api/backend-configuration-pn/chemicals/properties/{propertyId:int}/exports/inventory",
         "POST api/backend-configuration-pn/chemicals/properties/{propertyId:int}/history",
         "POST api/backend-configuration-pn/chemicals/properties/{propertyId:int}/history/export",
@@ -315,6 +318,100 @@ public class ChemicalReportsControllerTests
 
         _exports.RemovedPlacementsXlsxAsync(UserId, 3).ThrowsAsync(new InvalidOperationException("boom"));
         Assert.That(await ControllerTestKit.CountSentryEventsAsync(() => sut.ExportRemovedPlacements(3)), Is.EqualTo(1));
+    }
+
+    // ---- all properties (the W1/W6 picker's "All") ----
+
+    /// <summary>The caller sees properties 3 and 4 (ListVisiblePropertiesAsync bounds "All").</summary>
+    private void SeeProperties(params int[] ids) =>
+        _permissions.ListVisiblePropertiesAsync(ChemicalCaller.Web(UserId)).Returns(ids
+            .Select(id => new ChemicalPropertyAccessRow(
+                new ChemicalPropertyAccessModel(id, $"P{id}", ChemicalPermissionFlagsModel.All, false, null), DateTime.MinValue))
+            .ToList());
+
+    private static IReadOnlyCollection<int> Ids(params int[] ids) =>
+        Arg.Is<IReadOnlyCollection<int>>(actual => actual.SequenceEqual(ids));
+
+    [Test]
+    public async Task GetAllPropertiesHistory_ReadsThePageOfEveryVisibleProperty()
+    {
+        var sut = CreateSut();
+        SeeProperties(3, 4);
+        var page = new ChemicalHistoryPageModel([], 0, []);
+        _history.GetPageForPropertiesAsync(Ids(3, 4), SampleQuery).Returns(page);
+
+        var result = await sut.GetAllPropertiesHistory(SampleRequest);
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Model, Is.SameAs(page));
+    }
+
+    [Test]
+    public async Task GetAllPropertiesHistory_AFromThatIsNotExactlyADate_IsA200FailedResultAndNeverReachesTheService()
+    {
+        var sut = CreateSut();
+        SeeProperties(3);
+
+        var result = await sut.GetAllPropertiesHistory(SampleRequest with { From = "2026-9-1" });
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Does.StartWith("ErrorWhileReadingChemicalHistory: From must be"));
+        await _history.DidNotReceiveWithAnyArgs().GetPageForPropertiesAsync(default, default);
+    }
+
+    [Test]
+    public async Task GetAllPropertiesHistory_MissingBody_IsA200FailedResult()
+    {
+        var sut = CreateSut();
+
+        var result = await sut.GetAllPropertiesHistory(null);
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Is.EqualTo("ErrorWhileReadingChemicalHistory: A request body is required."));
+    }
+
+    [Test]
+    public async Task ExportAllPropertiesHistory_ExportsEveryVisibleProperty()
+    {
+        var sut = CreateSut();
+        SeeProperties(3, 4);
+        _exports.AllPropertiesHistoryXlsxAsync(Ids(3, 4), SampleQuery)
+            .Returns(new ChemicalExportFile([1], "h.xlsx", ChemicalExportService.XlsxContentType));
+
+        var result = (FileContentResult)await sut.ExportAllPropertiesHistory(SampleRequest);
+
+        Assert.That(result.ContentType, Is.EqualTo(ChemicalExportService.XlsxContentType));
+    }
+
+    [Test]
+    public async Task ExportAllPropertiesHistory_MissingBody_Is400AndNeverReachesTheService()
+    {
+        var sut = CreateSut();
+
+        AssertStatus(await sut.ExportAllPropertiesHistory(null), StatusCodes.Status400BadRequest);
+        await _exports.DidNotReceiveWithAnyArgs().AllPropertiesHistoryXlsxAsync(default, default);
+    }
+
+    [Test]
+    public async Task ExportAllPropertiesInventory_PassesTheCallerAndTheRequestedIds()
+    {
+        var sut = CreateSut();
+        _exports.AllPropertiesInventoryXlsxAsync(UserId, Arg.Any<IReadOnlyCollection<int>>())
+            .Returns(new ChemicalExportFile([1], "x.xlsx", ChemicalExportService.XlsxContentType));
+
+        var result = await sut.ExportAllPropertiesInventory(new ChemicalInventoryExportBody([7, 8]));
+
+        Assert.That(result, Is.InstanceOf<FileContentResult>());
+        await _exports.Received(1).AllPropertiesInventoryXlsxAsync(UserId, Ids(7, 8));
+    }
+
+    [Test]
+    public async Task ExportAllPropertiesInventory_WithoutBody_ExportsEveryOpenPlacement()
+    {
+        var sut = CreateSut();
+        _exports.AllPropertiesInventoryXlsxAsync(UserId, null).Returns(new ChemicalExportFile([1], "x.xlsx", ChemicalExportService.XlsxContentType));
+
+        Assert.That(await sut.ExportAllPropertiesInventory(null), Is.InstanceOf<FileContentResult>());
     }
 
     // ---- TODO(chemistry-GA): remove with the [FirstUserOnly] on the controller, like ChemicalsControllerFirstUserGateTests ----

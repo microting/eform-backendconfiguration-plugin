@@ -11,7 +11,7 @@ import {TranslateModule} from '@ngx-translate/core';
 import {BehaviorSubject, of, Subject} from 'rxjs';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {chemicalsSelectProperty} from '../../../../state';
+import {ChemicalsScope, chemicalsSelectAllProperties, chemicalsSelectProperty} from '../../../../state';
 import {ChemicalsContainerComponent} from './chemicals-container.component';
 import {detectChanges} from '../../../../testing/detect-changes';
 import {CommonModule} from '@angular/common';
@@ -24,7 +24,7 @@ import {CommonModule} from '@angular/common';
 describe('ChemicalsContainerComponent (picker)', () => {
   let fixture: ComponentFixture<ChemicalsContainerComponent>;
   let component: ChemicalsContainerComponent;
-  let selectedProperty$: BehaviorSubject<number | null>;
+  let scope$: BehaviorSubject<ChemicalsScope>;
   const list = [{id: 7, name: 'Hovedgaarden', description: ''}, {id: 8, name: 'Engvej 12', description: ''}];
 
   const shown = (): string =>
@@ -54,14 +54,17 @@ describe('ChemicalsContainerComponent (picker)', () => {
     await settle();
   }
 
-  beforeEach(async () => {
-    selectedProperty$ = new BehaviorSubject<number | null>(null);
+  /** `allowsAll`: the routed screen offers "All" (Beholdning, Historik). */
+  async function setUp(allowsAll: boolean): Promise<void> {
+    scope$ = new BehaviorSubject<ChemicalsScope>({propertyId: null, allProperties: false});
     const store = {
       select: vi.fn().mockImplementation((selector) =>
-        selector === selectCurrentUserIsFirstUser ? new BehaviorSubject(true) : selectedProperty$),
+        selector === selectCurrentUserIsFirstUser ? new BehaviorSubject(true) : scope$),
       dispatch: vi.fn().mockImplementation((action: {type: string; payload: number | null}) => {
         if (action.type === chemicalsSelectProperty.type) {
-          selectedProperty$.next(action.payload);
+          scope$.next({propertyId: action.payload, allProperties: false});
+        } else if (action.type === chemicalsSelectAllProperties.type) {
+          scope$.next({propertyId: null, allProperties: true});
         }
       }),
     };
@@ -75,7 +78,10 @@ describe('ChemicalsContainerComponent (picker)', () => {
         {provide: Router, useValue: {
           navigate: vi.fn().mockResolvedValue(true), events: new Subject(), currentNavigation: vi.fn().mockReturnValue(null),
         }},
-        {provide: ActivatedRoute, useValue: {snapshot: {queryParamMap: convertToParamMap({})}, firstChild: null}},
+        {provide: ActivatedRoute, useValue: {
+          snapshot: {queryParamMap: convertToParamMap({})},
+          firstChild: allowsAll ? {snapshot: {data: {allProperties: true}}} : null,
+        }},
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
@@ -85,7 +91,9 @@ describe('ChemicalsContainerComponent (picker)', () => {
     fixture = TestBed.createComponent(ChemicalsContainerComponent);
     component = fixture.componentInstance;
     await settle();
-  });
+  }
+
+  beforeEach(() => setUp(false));
 
   afterEach(() => fixture?.destroy());
 
@@ -113,5 +121,36 @@ describe('ChemicalsContainerComponent (picker)', () => {
 
     expect(component.propertyId).toBe(7);
     expect(shown()).toBe('Hovedgaarden');
+  });
+  it('offers no "All" on a screen without it', async () => {
+    const container = fixture.debugElement.query(By.css('#chemicalsPropertySelect .ng-select-container'));
+    container.nativeElement.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+    await settle();
+
+    const options = Array.from(document.querySelectorAll('.ng-option')).map((el) => el.textContent?.trim());
+    expect(options).toEqual(['Hovedgaarden', 'Engvej 12']);
+  });
+
+  describe('on Beholdning and Historik', () => {
+    beforeEach(async () => {
+      fixture?.destroy();
+      TestBed.resetTestingModule();
+      await setUp(true);
+    });
+
+    it('starts on "All", listed first, and switches to a picked property', async () => {
+      expect(shown()).toBe('Chemicals: All');
+
+      await pick('Engvej 12');
+
+      expect(component.propertyId).toBe(8);
+      expect(component.allProperties).toBe(false);
+      expect(shown()).toBe('Engvej 12');
+
+      await pick('Chemicals: All');
+
+      expect(component.allProperties).toBe(true);
+      expect(shown()).toBe('Chemicals: All');
+    });
   });
 });

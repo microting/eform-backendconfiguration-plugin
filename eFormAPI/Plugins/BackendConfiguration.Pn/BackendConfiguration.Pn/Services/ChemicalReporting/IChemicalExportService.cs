@@ -34,4 +34,10 @@ public interface IChemicalExportService
     Task<ChemicalExportFile> RemovedPlacementsXlsxAsync(int userId, int propertyId);
 
     Task<ChemicalExportFile> HistoryXlsxAsync(int propertyId, ChemicalHistoryQuery query);
+
+    /// <summary>The picker's "All": the W1 Excel over every property the user may view, with the Ejendom column.</summary>
+    Task<ChemicalExportFile> AllPropertiesInventoryXlsxAsync(int userId, IReadOnlyCollection<int> placementIds);
+
+    /// <summary>The picker's "All": the W6 Excel over <paramref name="propertyIds"/> (the caller's visible properties).</summary>
+    Task<ChemicalExportFile> AllPropertiesHistoryXlsxAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query);
 }

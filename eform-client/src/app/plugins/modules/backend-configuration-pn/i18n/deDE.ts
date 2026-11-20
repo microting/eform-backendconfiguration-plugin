@@ -1137,6 +1137,7 @@ export const deDE = {
   'Chemicals: Export authority list': 'Chemikalienliste für die Arbeitsschutzbehörde (PDF)',
   'Chemicals: Export current filter': 'Excel-Datei (.xlsx) des aktuellen Filters',
   'Chemicals: Export removed placements': 'In den letzten 12 Monaten entfernte Chemikalien (Excel)',
+  'Chemicals: Select a property to export': 'Wählen Sie eine Immobilie für den Export aus',
   'Chemicals: Register placement': 'Chemikalie an einem Standort registrieren',
   'Chemicals: Search inventory hint': 'Produkt, Registrierungsnummer, Lagerort',
   'Chemicals: No placements': 'Hier sind noch keine Chemikalien registriert.',

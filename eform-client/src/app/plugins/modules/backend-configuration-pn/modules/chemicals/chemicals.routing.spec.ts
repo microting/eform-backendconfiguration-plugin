@@ -25,6 +25,13 @@ describe('ChemicalsRouting', () => {
     expect(children.map((r) => r.data?.['titleKey'])).toEqual(CHEMICAL_SCREENS.map((s) => s.titleKey));
   });
 
+  it('offers the picker\'s "All" on Beholdning and Historik only (owner 2026-11-20)', () => {
+    const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
+
+    expect(children.filter((r) => r.data?.['allProperties'] === true).map((r) => r.path)).toEqual(['inventory', 'history']);
+    expect(CHEMICAL_SCREENS.filter((s) => s.allProperties).map((s) => s.path)).toEqual(['inventory', 'history']);
+  });
+
   it('guards every screen against dropping unsaved changes (I-3)', () => {
     const children = (routes[0].children ?? []).filter((r) => !r.redirectTo);
 

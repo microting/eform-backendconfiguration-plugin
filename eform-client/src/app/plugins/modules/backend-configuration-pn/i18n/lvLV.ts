@@ -920,6 +920,7 @@ export const lvLV = {
   'Chemicals: Export authority list': 'Darba vides pārvaldes ķīmisko vielu saraksts (PDF)',
   'Chemicals: Export current filter': 'Pašreizējā filtra Excel fails (.xlsx)',
   'Chemicals: Export removed placements': 'Pēdējo 12 mēnešu laikā izņemtās ķīmiskās vielas (Excel)',
+  'Chemicals: Select a property to export': 'Izvēlieties īpašumu eksportēšanai',
   'Chemicals: Register placement': 'Reģistrēt ķīmisku vielu noteiktā vietā',
   'Chemicals: Search inventory hint': 'Produkts, reģistrācijas numurs, uzglabāšanas vieta',
   'Chemicals: No placements': 'Šeit vēl nav reģistrētas ķīmiskas vielas.',

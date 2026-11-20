@@ -920,6 +920,7 @@ export const elGR = {
   'Chemicals: Export authority list': 'Λίστα χημικών ουσιών για την Αρχή Εργασιακού Περιβάλλοντος (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) του τρέχοντος φίλτρου',
   'Chemicals: Export removed placements': 'Χημικά που αφαιρέθηκαν τους τελευταίους 12 μήνες (Excel)',
+  'Chemicals: Select a property to export': 'Επιλέξτε ένα ακίνητο για εξαγωγή',
   'Chemicals: Register placement': 'Καταχωρίστε μια χημική ουσία σε μια τοποθεσία',
   'Chemicals: Search inventory hint': 'Προϊόν, αριθμός καταχώρισης, χώρος αποθήκευσης',
   'Chemicals: No placements': 'Δεν έχουν καταχωριστεί ακόμη χημικές ουσίες εδώ.',

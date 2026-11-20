@@ -7,7 +7,7 @@ import {ChemicalsContainerComponent} from './components';
 const screenRoutes: Route[] = CHEMICAL_SCREENS.map((screen) => ({
   path: screen.path,
   component: screen.component,
-  data: {titleKey: screen.titleKey},
+  data: {titleKey: screen.titleKey, allProperties: !!screen.allProperties},
   canDeactivate: [chemicalUnsavedChangesGuard],
 }));
 

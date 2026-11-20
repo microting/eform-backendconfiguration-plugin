@@ -920,6 +920,7 @@ export const roRO = {
   'Chemicals: Export authority list': 'Lista substanțelor chimice pentru Autoritatea pentru Mediul de Muncă (PDF)',
   'Chemicals: Export current filter': 'Fișier Excel (.xlsx) al filtrului curent',
   'Chemicals: Export removed placements': 'Substanțe chimice eliminate în ultimele 12 luni (Excel)',
+  'Chemicals: Select a property to export': 'Selectați o proprietate pentru export',
   'Chemicals: Register placement': 'Înregistrați o substanță chimică într-o locație',
   'Chemicals: Search inventory hint': 'Produs, număr de înregistrare, loc de depozitare',
   'Chemicals: No placements': 'Încă nu sunt înregistrate aici substanțe chimice.',

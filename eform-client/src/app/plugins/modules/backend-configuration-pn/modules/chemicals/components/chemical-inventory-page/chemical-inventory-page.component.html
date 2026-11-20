@@ -7,7 +7,7 @@
     </mat-form-field>
     <mat-form-field>
       <mat-label>{{ 'Location' | translate }}</mat-label>
-      <mtx-select id="chemicalsLocationFilter" [items]="inventory?.locations ?? []" bindLabel="name" bindValue="id"
+      <mtx-select id="chemicalsLocationFilter" [items]="locationOptions" bindLabel="name" bindValue="id"
                   [ngModel]="filters.locationId" (ngModelChange)="updateFilters({locationId: $event ?? null})"
                   [placeholder]="'Chemicals: All' | translate"></mtx-select>
     </mat-form-field>
@@ -33,7 +33,10 @@
       <span>{{ 'Chemicals: Export' | translate }}</span>
     </button>
     <mat-menu #exportMenu="matMenu">
-      <button mat-menu-item id="chemicalsExportAuthorityList" (click)="exportAuthorityList()">
+      <div *ngIf="propertyExportsDisabled" id="chemicalsExportSelectPropertyHint" class="chemicals-hint chemicals-menu-hint" role="note">
+        {{ 'Chemicals: Select a property to export' | translate }}
+      </div>
+      <button mat-menu-item id="chemicalsExportAuthorityList" [disabled]="propertyExportsDisabled" (click)="exportAuthorityList()">
         <mat-icon>picture_as_pdf</mat-icon>
         <span>{{ 'Chemicals: Export authority list' | translate }}</span>
       </button>
@@ -41,7 +44,7 @@
         <mat-icon>table_view</mat-icon>
         <span>{{ 'Chemicals: Export current filter' | translate }}</span>
       </button>
-      <button mat-menu-item id="chemicalsExportRemoved" (click)="exportRemovedPlacements()">
+      <button mat-menu-item id="chemicalsExportRemoved" [disabled]="propertyExportsDisabled" (click)="exportRemovedPlacements()">
         <mat-icon>history</mat-icon>
         <span>{{ 'Chemicals: Export removed placements' | translate }}</span>
       </button>
@@ -96,7 +99,7 @@
   </ng-template>
   <ng-template #noteTpl let-row>{{ row.placement.placementNote }}</ng-template>
   <ng-template #stockTpl let-row>
-    <span *ngIf="row.stockUnitLabel">{{ row.placement.balance | number: '1.0-3' }} {{ row.stockUnitLabel }}</span>
+    <span *ngIf="row.stockUnitLabel && rowStockEnabled(row)">{{ row.placement.balance | number: '1.0-3' }} {{ row.stockUnitLabel }}</span>
   </ng-template>
   <ng-template #deadlineTpl let-row>
     <ng-container *ngIf="row.deadline; else noDeadline">
@@ -128,7 +131,7 @@
         <button mat-menu-item id="chemicalRowNote-{{i}}" (click)="openNote(row)">
           <mat-icon>edit_note</mat-icon><span>{{ 'Chemicals: Edit placement note' | translate }}</span>
         </button>
-        <button *ngIf="stockEnabled" mat-menu-item id="chemicalRowStock-{{i}}" (click)="openStock(row)">
+        <button *ngIf="rowStockEnabled(row)" mat-menu-item id="chemicalRowStock-{{i}}" (click)="openStock(row)">
           <mat-icon>inventory_2</mat-icon><span>{{ 'Chemicals: Register stock movement' | translate }}</span>
         </button>
         <button mat-menu-item id="chemicalRowSds-{{i}}" [disabled]="!hasSds(row)" (click)="openSds(row)">

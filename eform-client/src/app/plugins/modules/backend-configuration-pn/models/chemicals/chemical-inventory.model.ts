@@ -71,6 +71,9 @@ export interface ChemicalPlacementChangeModel {
   registerEntries: ChemicalRegisterEntryModel[];
 }
 
+/** GET chemicals/locations (W6 under the picker's "All"): the visible properties and their locations, archived included. */
+export type ChemicalPropertyLocationsModel = Pick<ChemicalInventoryModel, 'properties' | 'locations'>;
+
 /** GET properties/{id}/inventory: one property, locations incl. archived, open + 12-month-closed placements. */
 export interface ChemicalInventoryModel extends ChemicalPlacementChangeModel {
   properties: ChemicalPropertyAccessModel[];

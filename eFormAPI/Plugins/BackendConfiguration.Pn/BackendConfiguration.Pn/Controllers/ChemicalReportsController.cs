@@ -21,6 +21,8 @@ SOFTWARE.
 namespace BackendConfiguration.Pn.Controllers;
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Infrastructure.Models.Chemicals;
 using Microsoft.AspNetCore.Authorization;
@@ -78,6 +80,37 @@ public class ChemicalReportsController(
             return await exports.HistoryXlsxAsync(propertyId, query).ConfigureAwait(false);
         });
 
+    // ---- the picker's "All" (W1/W6): every property the caller may view ----
+
+    [HttpPost("history")]
+    public async Task<OperationDataResult<ChemicalHistoryPageModel>> GetAllPropertiesHistory([FromBody] ChemicalHistoryRequest request)
+    {
+        try
+        {
+            var query = ChemicalsController.Required(request).ToQuery();
+            return new OperationDataResult<ChemicalHistoryPageModel>(true,
+                await history.GetPageForPropertiesAsync(await VisiblePropertyIdsAsync().ConfigureAwait(false), query).ConfigureAwait(false));
+        }
+        catch (Exception e)
+        {
+            return ChemicalsController.FailureResult<ChemicalHistoryPageModel>(
+                e, localizationService, ChemicalLocalizationKeys.ErrorWhileReadingChemicalHistory);
+        }
+    }
+
+    [HttpPost("history/export")]
+    public Task<IActionResult> ExportAllPropertiesHistory([FromBody] ChemicalHistoryRequest request) =>
+        ChemicalsController.FileResultAsync(this, async () =>
+        {
+            var query = ChemicalsController.Required(request).ToQuery();
+            return await exports.AllPropertiesHistoryXlsxAsync(await VisiblePropertyIdsAsync().ConfigureAwait(false), query).ConfigureAwait(false);
+        });
+
+    // A missing body exports every open placement, as the per-property route.
+    [HttpPost("exports/inventory")]
+    public Task<IActionResult> ExportAllPropertiesInventory([FromBody] ChemicalInventoryExportBody body) =>
+        ChemicalsController.FileResultAsync(this, () => exports.AllPropertiesInventoryXlsxAsync(userService.UserId, body?.PlacementIds));
+
     [HttpGet("properties/{propertyId:int}/exports/authority-list")]
     public Task<IActionResult> ExportAuthorityList(int propertyId) =>
         ChemicalsController.FileResultAsync(this, () => exports.AuthorityListPdfAsync(userService.UserId, propertyId));
@@ -90,4 +123,8 @@ public class ChemicalReportsController(
     [HttpGet("properties/{propertyId:int}/exports/removed-placements")]
     public Task<IActionResult> ExportRemovedPlacements(int propertyId) =>
         ChemicalsController.FileResultAsync(this, () => exports.RemovedPlacementsXlsxAsync(userService.UserId, propertyId));
+
+    /// <summary>What "All" covers: the same visibility as the inventory and the app's sync.</summary>
+    private async Task<IReadOnlyCollection<int>> VisiblePropertyIdsAsync() =>
+        (await permissions.ListVisiblePropertiesAsync(Caller).ConfigureAwait(false)).Select(a => a.Access.PropertyId).ToList();
 }

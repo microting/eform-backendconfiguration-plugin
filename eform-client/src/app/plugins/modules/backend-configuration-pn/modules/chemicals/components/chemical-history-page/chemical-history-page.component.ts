@@ -3,11 +3,14 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {Store} from '@ngrx/store';
 import {ToastrService} from 'ngx-toastr';
+import {Observable} from 'rxjs';
+import {OperationDataResult} from 'src/app/common/models';
 import {
   ChemicalHistoryEventModel,
   ChemicalHistoryQueryModel,
   ChemicalHistoryUserModel,
   ChemicalLocationModel,
+  ChemicalPropertyLocationsModel,
 } from '../../../../models';
 import {BackendConfigurationPnChemicalsService} from '../../../../services';
 import {
@@ -28,6 +31,7 @@ import {
   defaultHistoryPeriod,
   downloadFile,
   formatHistoryDetails,
+  propertyLocationLabels,
   historyActionKey,
   historyPeriodError,
   toYmd,
@@ -46,7 +50,8 @@ import {MtxSelect, MtxOption} from '@ng-matero/extensions/select';
  * W6 "Historik": the immutable event log of the selected property (placements, stock, moves, locations,
  * permissions, settings and the system's own events), filtered by user, action, location and period, paged
  * on the server and exportable as Excel. The filters live in the store; any change starts again at page 0.
- * The property is the container's (?propertyId sync and the picker).
+ * The property is the container's (?propertyId sync and the picker). Under the picker's "All" (owner
+ * 2026-11-20) the log, the filters and the Excel cover every property the user may view, with an Ejendom column.
  */
 @Component({
   selector: 'app-chemical-history-page',
@@ -74,13 +79,15 @@ export class ChemicalHistoryPageComponent implements OnInit {
   /** The Copenhagen day of the latest load (the server counts the period in Copenhagen days): the default period ends there. */
   today = copenhagenToday();
   propertyId: number | null = null;
+  /** The picker's "All": every property at once (propertyId is null then). */
+  allProperties = false;
   filters: ChemicalHistoryFiltersModel = {...chemicalsInitialState.historyFilters};
   events: ChemicalHistoryEventModel[] = [];
   /** Every user seen in the period (the server's list, without System). */
   users: ChemicalHistoryUserModel[] = [];
   /** All locations of the property, archived ones included: their history stays. */
   locations: ChemicalLocationModel[] = [];
-  /** The location filter: active ones in their order, then the archived ones, marked. */
+  /** The location filter: active ones in their order, then the archived ones, marked; "<Ejendom> – <Lokation>" under "All". */
   locationOptions: Array<{id: number; name: string}> = [];
   /** The user filter: System, the period's users and, if it is not among them, the selected user (m-5). */
   userOptions: ChemicalHistoryUserModel[] = [];
@@ -117,12 +124,18 @@ export class ChemicalHistoryPageComponent implements OnInit {
     return this.periodErrorKey !== null;
   }
 
+  /** Something to show: one property, or "All". */
+  get hasScope(): boolean {
+    return this.allProperties || this.propertyId !== null;
+  }
+
   ngOnInit(): void {
     this.store.select(selectChemicalsHistoryView)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({propertyId, filters}) => {
-        const propertyChanged = propertyId !== this.propertyId;
+      .subscribe(({propertyId, allProperties, filters}) => {
+        const propertyChanged = propertyId !== this.propertyId || allProperties !== this.allProperties;
         this.propertyId = propertyId;
+        this.allProperties = allProperties;
         this.filters = filters;
         this.pageIndex = 0;
         if (propertyChanged) {
@@ -164,12 +177,15 @@ export class ChemicalHistoryPageComponent implements OnInit {
 
   /** The whole filtered period (the server ignores paging for the file); one download at a time. */
   export(): void {
-    if (this.propertyId === null || this.periodError || this.exporting) {
+    if (!this.hasScope || this.periodError || this.exporting) {
       return;
     }
     this.exporting = true;
-    downloadFile(this.chemicalsService.exportHistory(this.propertyId, {...this.query, page: 0}), this.toastr, this.translate,
-      () => (this.exporting = false));
+    const query = {...this.query, page: 0};
+    const file = this.allProperties
+      ? this.chemicalsService.exportAllPropertiesHistory(query)
+      : this.chemicalsService.exportHistory(this.propertyId, query);
+    downloadFile(file, this.toastr, this.translate, () => (this.exporting = false));
   }
 
   /** `restart`: a new property or filter, so the old count no longer applies; a page change keeps it. */
@@ -177,15 +193,17 @@ export class ChemicalHistoryPageComponent implements OnInit {
     this.today = copenhagenToday(this.now());
     this.load.reset();
     this.events = [];
-    const propertyId = this.propertyId;
-    const unqueryable = propertyId === null || this.periodError;
+    const unqueryable = !this.hasScope || this.periodError;
     if (restart || unqueryable) {
       this.total = 0;
     }
     if (unqueryable) {
       return;
     }
-    this.load.run(this.chemicalsService.getHistory(propertyId, this.query), (page) => {
+    const request = this.allProperties
+      ? this.chemicalsService.getAllPropertiesHistory(this.query)
+      : this.chemicalsService.getHistory(this.propertyId, this.query);
+    this.load.run(request, (page) => {
       this.events = page?.events ?? [];
       this.total = page?.total ?? 0;
       this.setUsers(page?.users ?? []);
@@ -206,18 +224,30 @@ export class ChemicalHistoryPageComponent implements OnInit {
 
   private loadLocations(): void {
     this.locationsLoad.reset();
-    this.setLocations([]);
-    if (this.propertyId !== null) {
-      this.locationsLoad.run(this.chemicalsService.getPropertyInventory(this.propertyId),
-        (inventory) => this.setLocations(inventory?.locations ?? []));
+    this.setLocations(null);
+    let request: Observable<OperationDataResult<ChemicalPropertyLocationsModel>> | null = null;
+    if (this.allProperties) {
+      request = this.chemicalsService.getAllPropertiesLocations();
+    } else if (this.propertyId !== null) {
+      request = this.chemicalsService.getPropertyInventory(this.propertyId);
+    }
+    if (request) {
+      this.locationsLoad.run(request, (answer) => this.setLocations(answer));
     }
   }
 
-  private setLocations(locations: ChemicalLocationModel[]): void {
+  /** Active locations first, in their order; archived ones marked. Under "All" by property, labelled with it. */
+  private setLocations(model: ChemicalPropertyLocationsModel | null): void {
+    const locations = model?.locations ?? [];
     this.locations = locations;
     const archived = this.translate.instant('Chemicals: Archived');
+    const byProperty = this.allProperties && model ? propertyLocationLabels(model) : null;
     this.locationOptions = [...locations]
-      .sort((a, b) => Number(a.archived) - Number(b.archived) || a.sortOrder - b.sortOrder || a.id - b.id)
-      .map((l) => ({id: l.id, name: l.archived ? `${l.name} (${archived})` : l.name}));
+      .sort((a, b) => Number(a.archived) - Number(b.archived) || (byProperty ? byProperty.compare(a, b) : 0)
+        || a.sortOrder - b.sortOrder || a.id - b.id)
+      .map((l) => {
+        const name = byProperty ? byProperty.label(l) : l.name;
+        return {id: l.id, name: l.archived ? `${name} (${archived})` : name};
+      });
   }
 }

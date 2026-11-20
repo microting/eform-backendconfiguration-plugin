@@ -63,6 +63,8 @@ describe('BackendConfigurationPnChemicalsService', () => {
 
   const cases: Array<[string, (s: BackendConfigurationPnChemicalsService) => Observable<unknown>, string, unknown[]]> = [
     ['inventory', (s) => s.getPropertyInventory(3), 'get', [`${BASE}/properties/3/inventory`]],
+    ['inventory of every property', (s) => s.getAllPropertiesInventory(), 'get', [`${BASE}/inventory`]],
+    ['locations of every property', (s) => s.getAllPropertiesLocations(), 'get', [`${BASE}/locations`]],
     ['register search', (s) => s.searchRegister('round', 1, 10), 'get', [`${BASE}/register/search`, {query: 'round', page: 1, pageSize: 10}]],
     ['register search defaults', (s) => s.searchRegister('x'), 'get', [`${BASE}/register/search`, {query: 'x', page: 0, pageSize: 25}]],
     ['barcode lookup encodes', (s) => s.lookupBarcode('57 01'), 'get', [`${BASE}/register/barcode/57%2001`]],
@@ -92,6 +94,8 @@ describe('BackendConfigurationPnChemicalsService', () => {
     ['digest preview', (s) => s.getDigestPreview(3), 'get', [`${BASE}/properties/3/digest-preview`]],
     ['history page', (s) => s.getHistory(3, {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 1, pageSize: 25}), 'post',
       [`${BASE}/properties/3/history`, {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 1, pageSize: 25}]],
+    ['history page of every property', (s) => s.getAllPropertiesHistory({from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 1, pageSize: 25}), 'post',
+      [`${BASE}/history`, {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 1, pageSize: 25}]],
   ];
 
   it.each(cases)('%s calls the Plan A route', (_name, call, verb, args) => {
@@ -211,6 +215,19 @@ describe('BackendConfigurationPnChemicalsService', () => {
       service.exportHistory(3, query).subscribe();
       expect(lastRequest().method).toBe('POST');
       expect(lastRequest().url).toBe(`${BASE}/properties/3/history/export`);
+      expect(lastRequest().body).toEqual(query);
+    });
+
+    it('POSTs the Excel of the current filter and the history of every property to their all-properties routes', async () => {
+      await firstValueFrom(service.exportAllPropertiesInventory([7, 9]));
+      expect(lastRequest().method).toBe('POST');
+      expect(lastRequest().url).toBe(`${BASE}/exports/inventory`);
+      expect(lastRequest().body).toEqual({placementIds: [7, 9]});
+
+      const query = {from: '2026-09-01', to: '2026-09-29', userId: null, action: null, locationId: null, page: 0, pageSize: 25};
+      await firstValueFrom(service.exportAllPropertiesHistory(query));
+      expect(lastRequest().method).toBe('POST');
+      expect(lastRequest().url).toBe(`${BASE}/history/export`);
       expect(lastRequest().body).toEqual(query);
     });
 

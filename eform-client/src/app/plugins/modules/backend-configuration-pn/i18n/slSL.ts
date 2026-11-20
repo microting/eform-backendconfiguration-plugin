@@ -920,6 +920,7 @@ export const slSL = {
   'Chemicals: Export authority list': 'Seznam kemikalij za organ za delovno okolje (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) trenutnega filtra',
   'Chemicals: Export removed placements': 'Kemikalije, odstranjene v zadnjih 12 mesecih (Excel)',
+  'Chemicals: Select a property to export': 'Izberite nepremičnino za izvoz',
   'Chemicals: Register placement': 'Registrirajte kemikalijo na lokaciji',
   'Chemicals: Search inventory hint': 'Izdelek, registracijska številka, skladiščni prostor',
   'Chemicals: No placements': 'Tukaj še ni registriranih nobenih kemikalij.',

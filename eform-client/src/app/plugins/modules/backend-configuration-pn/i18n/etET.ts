@@ -920,6 +920,7 @@ export const etET = {
   'Chemicals: Export authority list': 'Töökeskkonnaameti kemikaalide nimekiri (PDF)',
   'Chemicals: Export current filter': 'Praeguse filtri Exceli fail (.xlsx)',
   'Chemicals: Export removed placements': 'Viimase 12 kuu jooksul eemaldatud kemikaalid (Excel)',
+  'Chemicals: Select a property to export': 'Valige eksportimiseks kinnisvara',
   'Chemicals: Register placement': 'Registreeri kemikaal asukohas',
   'Chemicals: Search inventory hint': 'Toode, registreerimisnumber, hoiukoht',
   'Chemicals: No placements': 'Siin pole veel ühtegi kemikaali registreeritud.',

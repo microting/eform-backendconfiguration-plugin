@@ -3,7 +3,10 @@ import {ChemicalStockEntryKind, ChemicalStockEntryOrigin, ChemicalStockUnit} fro
 import {entry, inventoryOf, location, placement, stockEntry} from './chemical-inventory.fixtures';
 import {
   CHEMICAL_MAX_AMOUNT,
+  anyStockEnabled,
   buildInventoryRows,
+  inventoryLocationOptions,
+  locationsOfProperty,
   chemicalStatusLabelKey,
   isValidQuantity,
   filterInventoryRows,
@@ -167,11 +170,11 @@ describe('placement stock history and sibling placements', () => {
 
   it('is empty without an inventory', () => {
     expect(placementStockHistory(null, 2)).toEqual([]);
-    expect(placementsOfChemical(null, 100)).toEqual([]);
+    expect(placementsOfChemical(null, 100, 1)).toEqual([]);
   });
 
   it('lists every open placement of the same chemical', () => {
-    expect(placementsOfChemical(inventory, 100).map((p) => p.id)).toEqual([1]);
+    expect(placementsOfChemical(inventory, 100, 1).map((p) => p.id)).toEqual([1]);
   });
 });
 
@@ -192,5 +195,69 @@ describe('isValidQuantity (the server\'s ChemicalQuantity rules)', () => {
   it('accepts zero only where the server does (a counted balance)', () => {
     expect(isValidQuantity(0, true)).toBe(true);
     expect(isValidQuantity(0, false)).toBe(false);
+  });
+});
+
+describe('every property at once (the picker\'s "All")', () => {
+  const two = {
+    ...inventoryOf({
+      locations: [
+        location(10, 'Lade', {propertyId: 1, sortOrder: 1}),
+        location(20, 'Værksted', {propertyId: 2, sortOrder: 1}),
+        location(21, 'Kemirum', {propertyId: 2, sortOrder: 0, archived: true}),
+      ],
+      placements: [placement(1, 10, 100, {propertyId: 1}), placement(2, 20, 100, {propertyId: 2})],
+      registerEntries: [entry(100, 'Virkon S')],
+    }),
+    properties: [
+      {propertyId: 2, name: 'Engvej 12', permissions: null, stockEnabled: true, callerWorkerId: null},
+      {propertyId: 1, name: 'Østergård', permissions: null, stockEnabled: false, callerWorkerId: null},
+    ],
+  };
+
+  it('names the property of every row and lists the properties in Danish order', () => {
+    const rows = buildInventoryRows(two, TODAY);
+
+    expect(rows.map((r) => [r.placement.id, r.propertyName])).toEqual([[2, 'Engvej 12'], [1, 'Østergård']]);
+  });
+
+  it('finds a row by its property name', () => {
+    const rows = buildInventoryRows(two, TODAY);
+
+    expect(filterInventoryRows(rows, {search: 'engvej', locationId: null, status: 'all', requiresActionOnly: false})
+      .map((r) => r.placement.id)).toEqual([2]);
+  });
+
+  it('labels the location filter "<Ejendom> – <Lokation>" under "All", by property then location order', () => {
+    expect(inventoryLocationOptions(two, true)).toEqual([
+      {id: 21, name: 'Engvej 12 – Kemirum'},
+      {id: 20, name: 'Engvej 12 – Værksted'},
+      {id: 10, name: 'Østergård – Lade'},
+    ]);
+  });
+
+  it('keeps the plain location names for one property', () => {
+    const one = inventoryOf({locations: [location(10, 'Lade'), location(11, 'Kemirum')]});
+
+    expect(inventoryLocationOptions(one, false)).toEqual([{id: 10, name: 'Lade'}, {id: 11, name: 'Kemirum'}]);
+    expect(inventoryLocationOptions(null, true)).toEqual([]);
+  });
+
+  it('has stock when any property has it', () => {
+    expect(anyStockEnabled(two)).toBe(true);
+    expect(anyStockEnabled(inventoryOf({stockEnabled: false}))).toBe(false);
+    expect(anyStockEnabled(null)).toBe(false);
+  });
+
+  it('lists the sibling placements of the row\'s own property only', () => {
+    const shared = {...two, placements: [...two.placements, placement(3, 20, 100, {propertyId: 2})]};
+
+    expect(placementsOfChemical(shared, 100, 2).map((p) => p.id)).toEqual([2, 3]);
+    expect(placementsOfChemical(shared, 100, 1).map((p) => p.id)).toEqual([1]);
+  });
+
+  it('gives a row the locations of its own property only', () => {
+    expect(locationsOfProperty(two, 2).map((l) => l.id)).toEqual([20, 21]);
+    expect(locationsOfProperty(null, 2)).toEqual([]);
   });
 });

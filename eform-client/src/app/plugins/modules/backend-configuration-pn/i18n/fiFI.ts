@@ -1043,6 +1043,7 @@ export const fiFI = {
   'Chemicals: Export authority list': 'Työympäristöviranomaisen kemikaaliluettelo (PDF)',
   'Chemicals: Export current filter': 'Nykyisen suodattimen Excel-tiedosto (.xlsx)',
   'Chemicals: Export removed placements': 'Viimeisen 12 kuukauden aikana poistetut kemikaalit (Excel)',
+  'Chemicals: Select a property to export': 'Valitse vietävä kiinteistö',
   'Chemicals: Register placement': 'Rekisteröi kemikaali sijaintiin',
   'Chemicals: Search inventory hint': 'Tuote, rekisterinumero, säilytyspaikka',
   'Chemicals: No placements': 'Kemikaaleja ei ole vielä rekisteröity täällä.',

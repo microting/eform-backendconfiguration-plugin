@@ -1043,6 +1043,7 @@ export const esES = {
   'Chemicals: Export authority list': 'Lista de productos químicos para la Autoridad de Medio Ambiente Laboral (PDF)',
   'Chemicals: Export current filter': 'Archivo Excel (.xlsx) del filtro actual',
   'Chemicals: Export removed placements': 'Sustancias químicas eliminadas en los últimos 12 meses (Excel)',
+  'Chemicals: Select a property to export': 'Seleccione una propiedad para exportar',
   'Chemicals: Register placement': 'Registrar un producto químico en una ubicación',
   'Chemicals: Search inventory hint': 'Producto, número de registro, lugar de almacenamiento',
   'Chemicals: No placements': 'Aún no hay productos químicos registrados aquí.',

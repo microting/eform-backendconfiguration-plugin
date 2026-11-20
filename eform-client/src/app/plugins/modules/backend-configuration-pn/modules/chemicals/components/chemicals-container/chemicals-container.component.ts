@@ -14,11 +14,11 @@ import {Store} from '@ngrx/store';
 import {CommonDictionaryModel} from 'src/app/common/models';
 import {selectCurrentUserIsFirstUser} from 'src/app/state';
 import {BackendConfigurationPnPropertiesService} from '../../../../services';
-import {chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsPropertyId} from '../../../../state';
+import {chemicalsSelectAllProperties, chemicalsSelectProperty, chemicalsSetProperties, selectChemicalsScope} from '../../../../state';
 import {ChemicalUnsavedChangesAware, confirmDiscardOf} from '../../chemicals-unsaved-changes';
 import {NgIf} from '@angular/common';
 import {FormsModule} from '@angular/forms';
-import {TranslatePipe} from '@ngx-translate/core';
+import {TranslatePipe, TranslateService} from '@ngx-translate/core';
 import {MatCard} from '@angular/material/card';
 import {MatFormField, MatLabel} from '@angular/material/form-field';
 import {MtxSelect} from '@ng-matero/extensions/select';
@@ -26,12 +26,28 @@ import {PropertySelectWidthDirective} from '../../../../directives';
 
 const DEFAULT_TITLE_KEY = 'Chemicals: Title';
 
+/** The picker value of "All" (Beholdning, Historik); never a property id, which is a positive integer. */
+export const CHEMICALS_ALL_PROPERTIES = 'all' as const;
+
+/** What the picker can hold: one property, or "All". */
+export type ChemicalsPickerValue = number | typeof CHEMICALS_ALL_PROPERTIES;
+
+export interface ChemicalsPickerItem {
+  id: ChemicalsPickerValue;
+  name: string;
+}
+
 /**
  * Kemi page frame: the active screen's title, the property picker every screen shares
  * and the router outlet. The selected property lives in the chemicalsState slice AND in
  * the `?propertyId=` query parameter, so a reload (which empties the store) restores it.
  * A switch the user starts (picker, a ?propertyId= from Back/Forward) first asks the
  * active screen, so its unsaved edits are never dropped silently.
+ *
+ * Beholdning and Historik (route data allProperties) also offer "All": the URL without
+ * ?propertyId= is "All" there, whether opened, reached by a menu click or by Back; only a
+ * ?propertyId= (the digest deeplink, a picked property) opens one property. Moving on to a
+ * screen without "All" selects the first property.
  *
  * TODO(chemistry-GA): the REST controllers are first-user-only until GA, so anyone else
  * gets a notice and no chemistry call is made. Remove the gate together with the
@@ -49,12 +65,20 @@ export class ChemicalsContainerComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private translate = inject(TranslateService);
 
   properties: CommonDictionaryModel[] = [];
+  /** What the picker offers: "All" first on the screens that have it, then the properties. */
+  pickerItems: ChemicalsPickerItem[] = [];
   /** Mirrors the store (chemicalsState.propertyId); only the store writes it. */
   propertyId: number | null = null;
+  /** Mirrors the store (chemicalsState.allProperties). */
+  allProperties = false;
   /** What the picker shows: follows the store, and briefly the user's pick while the screen is asked. */
-  pickerValue: number | null = null;
+  pickerValue: ChemicalsPickerValue | null = null;
+  /** The active screen offers "All" (its route data). */
+  screenAllowsAll = false;
+  private allLabel = '';
   isFirstUser = false;
   loaded = false;
   loadFailed = false;
@@ -68,6 +92,12 @@ export class ChemicalsContainerComponent implements OnInit {
    * while the properties are still loading, so the write waits for the navigation to end.
    */
   private navigating = false;
+  /**
+   * The user picked in the picker while a navigation was in flight: the pick is newer than that navigation's
+   * URL, so its end writes the pick instead of reading the URL. Only picker changes set it; the container's
+   * own starting selection or a timer's sync never do.
+   */
+  private urlBehind = false;
   private pendingSync: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
@@ -78,7 +108,13 @@ export class ChemicalsContainerComponent implements OnInit {
     this.router.events
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((event) => this.onRouterEvent(event));
-    this.refreshTitle();
+    this.refreshScreen();
+    this.translate.stream('Chemicals: All')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((label: string) => {
+        this.allLabel = label;
+        this.refreshPickerItems();
+      });
 
     this.store.select(selectCurrentUserIsFirstUser)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -91,22 +127,36 @@ export class ChemicalsContainerComponent implements OnInit {
       });
   }
 
-  /** The picker's choice. On "keep editing" the property stays and the picker is put back. */
-  onPropertyChange(propertyId: number | null): void {
-    this.pickerValue = propertyId;
-    if (propertyId === this.propertyId) {
+  /** The picker's choice. On "keep editing" the selection stays and the picker is put back. */
+  onPropertyChange(value: ChemicalsPickerValue | null): void {
+    this.pickerValue = value;
+    if (value === this.selection) {
+      this.markPick();
       this.syncUrl();
       return;
     }
     this.askScreen((discard) => {
       if (discard) {
-        this.applyProperty(propertyId);
+        this.markPick();
+        this.apply(value);
       } else {
         // Put back after the picker has been rendered with the pick: a synchronous revert
         // leaves ngModel's binding unchanged, and the select would keep showing the pick.
-        setTimeout(() => (this.pickerValue = this.propertyId));
+        setTimeout(() => (this.pickerValue = this.selection));
       }
     });
+  }
+
+  /** A pick kept while a navigation runs is newer than its URL (see urlBehind); a refused pick is not. */
+  private markPick(): void {
+    if (this.navigating) {
+      this.urlBehind = true;
+    }
+  }
+
+  /** The store's selection as a picker value. */
+  private get selection(): ChemicalsPickerValue | null {
+    return this.allProperties ? CHEMICALS_ALL_PROPERTIES : this.propertyId;
   }
 
   /** The active screen has an uncancellable request in flight; switching now would race it. */
@@ -126,19 +176,22 @@ export class ChemicalsContainerComponent implements OnInit {
     confirmDiscardOf(this.activeScreen).subscribe(then);
   }
 
-  private applyProperty(propertyId: number | null): void {
-    if (propertyId !== this.propertyId) {
-      this.store.dispatch(chemicalsSelectProperty({payload: propertyId}));
+  private apply(value: ChemicalsPickerValue | null): void {
+    if (value !== this.selection) {
+      this.store.dispatch(value === CHEMICALS_ALL_PROPERTIES
+        ? chemicalsSelectAllProperties()
+        : chemicalsSelectProperty({payload: value}));
     }
     this.syncUrl();
   }
 
   private loadProperties(): void {
-    this.store.select(selectChemicalsPropertyId)
+    this.store.select(selectChemicalsScope)
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((id) => {
-        this.propertyId = id;
-        this.pickerValue = id;
+      .subscribe((scope) => {
+        this.propertyId = scope.propertyId;
+        this.allProperties = scope.allProperties;
+        this.pickerValue = this.selection;
       });
 
     this.propertiesService.getAllPropertiesDictionary()
@@ -157,7 +210,8 @@ export class ChemicalsContainerComponent implements OnInit {
           }
           this.properties = res.model || [];
           this.store.dispatch(chemicalsSetProperties({payload: this.properties}));
-          this.applyProperty(this.initialPropertyId());
+          this.refreshScreen();
+          this.apply(this.initialSelection());
         },
         error: () => {
           this.loaded = true;
@@ -166,11 +220,17 @@ export class ChemicalsContainerComponent implements OnInit {
       });
   }
 
-  /** The URL wins (a reload empties the store), then the remembered property, then the first one. */
-  private initialPropertyId(): number | null {
+  /**
+   * The URL wins (a reload empties the store), then "All" on a screen that has it, then the remembered
+   * property, then the first one. No properties: nothing ("All" of nothing would hide "no properties").
+   */
+  private initialSelection(): ChemicalsPickerValue | null {
     const fromUrl = this.propertyIdFromUrl();
     if (this.hasProperty(fromUrl)) {
       return fromUrl;
+    }
+    if (this.screenAllowsAll && this.properties.length) {
+      return CHEMICALS_ALL_PROPERTIES;
     }
     if (this.hasProperty(this.propertyId)) {
       return this.propertyId;
@@ -188,8 +248,14 @@ export class ChemicalsContainerComponent implements OnInit {
       this.navigating = false;
       // A cancel is also how the router reports a navigation replaced by a newer one, whose start
       // follows in the same tick: write after that tick, and only if nothing is navigating then.
+      // A timer that finds a newer navigation running leaves the write to that navigation's end, and must not
+      // mark a pick as pending (urlBehind): the user picked nothing.
       clearTimeout(this.pendingSync);
-      this.pendingSync = setTimeout(() => this.syncUrl());
+      this.pendingSync = setTimeout(() => {
+        if (!this.navigating) {
+          this.syncUrl();
+        }
+      });
     }
   }
 
@@ -200,16 +266,40 @@ export class ChemicalsContainerComponent implements OnInit {
    * URL, so the repair that follows is a no-op.
    */
   private onNavigationEnd(): void {
-    this.refreshTitle();
+    this.refreshScreen();
     if (!this.isFirstUser || !this.loaded || this.loadFailed) {
       return;
     }
-    const fromUrl = this.propertyIdFromUrl();
-    if (this.hasProperty(fromUrl) && fromUrl !== this.propertyId) {
-      this.askScreen((discard) => (discard ? this.applyProperty(fromUrl) : this.syncUrl()));
+    const wanted = this.selectionFromUrl();
+    if (wanted !== null && wanted !== this.selection) {
+      this.askScreen((discard) => (discard ? this.apply(wanted) : this.syncUrl()));
+    } else if (this.allProperties && !this.screenAllowsAll) {
+      // This screen shows one property: the screen that had "All" is already left.
+      this.apply(this.properties.length ? this.properties[0].id : null);
     } else {
       this.syncUrl();
     }
+  }
+
+  /**
+   * What the URL of a finished navigation selects: a known ?propertyId=, or on a screen with "All" no parameter.
+   * Null: keep the selection. A kept pick made while the navigation ran is newer than its URL, so it wins when the
+   * arriving screen can show it (the caller then writes it to the URL; that write's own end finds the URL in step,
+   * so nothing loops).
+   */
+  private selectionFromUrl(): ChemicalsPickerValue | null {
+    // The flag is used up on every path. A pick only wins where the arriving screen can show it: "All" on a
+    // single-property screen cannot, and then that navigation's URL decides, not a forced first property.
+    const pickWins = this.urlBehind && (this.screenAllowsAll || !this.allProperties);
+    this.urlBehind = false;
+    if (pickWins) {
+      return null;
+    }
+    const fromUrl = this.propertyIdFromUrl();
+    if (this.hasProperty(fromUrl)) {
+      return fromUrl;
+    }
+    return this.screenAllowsAll && fromUrl === null && this.properties.length ? CHEMICALS_ALL_PROPERTIES : null;
   }
 
   private hasProperty(id: number | null): boolean {
@@ -223,22 +313,51 @@ export class ChemicalsContainerComponent implements OnInit {
   }
 
   /**
-   * Keeps ?propertyId= equal to the selected property (menu clicks drop it). Never while a
-   * navigation is in flight (R-2): its NavigationEnd calls back here.
+   * Keeps ?propertyId= equal to the selected property (menu clicks drop it), and drops it under
+   * "All". Never while a navigation is in flight (R-2): its NavigationEnd calls back here.
    */
   private syncUrl(): void {
-    if (this.navigating || !this.isFirstUser || !this.loaded || this.propertyId === null
-      || this.propertyIdFromUrl() === this.propertyId) {
+    if (this.navigating) {
+      return;
+    }
+    this.urlBehind = false;
+    if (!this.isFirstUser || !this.loaded) {
+      return;
+    }
+    // Nothing selected (no properties): no parameter to write.
+    if (!this.allProperties && this.propertyId === null) {
+      return;
+    }
+    // "All" is the URL without the parameter; a property is its id.
+    const wanted = this.allProperties ? null : this.propertyId;
+    if (this.propertyIdFromUrl() === wanted) {
       return;
     }
     void this.router.navigate([], {
-      queryParams: {propertyId: this.propertyId},
+      queryParams: {propertyId: wanted},
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
   }
 
-  private refreshTitle(): void {
-    this.titleKey = this.route.firstChild?.snapshot.data?.['titleKey'] ?? DEFAULT_TITLE_KEY;
+  /** The active screen's title and whether it offers "All". */
+  private refreshScreen(): void {
+    const data = this.route.firstChild?.snapshot.data;
+    this.titleKey = data?.['titleKey'] ?? DEFAULT_TITLE_KEY;
+    this.screenAllowsAll = data?.['allProperties'] === true;
+    this.refreshPickerItems();
+  }
+
+  /** A new array only when something changed: the select re-reads its items on every new array. */
+  private refreshPickerItems(): void {
+    const items: ChemicalsPickerItem[] = [
+      ...(this.screenAllowsAll ? [{id: CHEMICALS_ALL_PROPERTIES, name: this.allLabel} as ChemicalsPickerItem] : []),
+      ...this.properties.map((p) => ({id: p.id, name: p.name})),
+    ];
+    const same = items.length === this.pickerItems.length
+      && items.every((item, i) => item.id === this.pickerItems[i].id && item.name === this.pickerItems[i].name);
+    if (!same) {
+      this.pickerItems = items;
+    }
   }
 }

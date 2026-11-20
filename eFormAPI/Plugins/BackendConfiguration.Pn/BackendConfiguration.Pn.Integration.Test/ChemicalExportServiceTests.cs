@@ -42,7 +42,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
 
     private static ChemicalStockAmountModel Liters(decimal amount) => new(null, null, amount, ChemicalStockUnitEnum.L, null, null, null);
 
-    private async Task<(int PropertyId, string PropertyName, int Open1, int Open2, int Closed)> ArrangeAsync(bool stock, decimal amount = 2m)
+    private async Task<(int PropertyId, string PropertyName, int Open1, int Open2, int Closed, int ChemicalId)> ArrangeAsync(bool stock, decimal amount = 2m)
     {
         var property = await CreatePropertyAsync();
         var inventory = CreateInventoryService();
@@ -55,7 +55,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
         var open2 = await RegisterAsync("Hylde 2");
         var closed = await RegisterAsync("Hylde 3");
         await inventory.RemovePlacementAsync(Web, new ChemicalRemovePlacementCommand(closed, ChemicalRemovalReasonEnum.Disposed, null, "farligt affald"));
-        return (property.Id, property.Name, open1, open2, closed);
+        return (property.Id, property.Name, open1, open2, closed, chemical.ChemicalId);
     }
 
     [Test]
@@ -74,7 +74,8 @@ public class ChemicalExportServiceTests : ChemicalTestBase
     public async Task Authority_list_has_label_link_when_present()
     {
         var a = await ArrangeAsync(stock: false);
-        var chemicalId = await ChemicalsDbContext!.Chemicals.Where(c => c.RegistrationNo == "1-212").Select(c => c.Id).FirstAsync();
+        // This arrange's own chemical: every arrange of the fixture seeds "1-212", and rows accumulate per fixture.
+        var chemicalId = a.ChemicalId;
         var label = Guid.NewGuid().ToString("N");
         await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, chemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Label, label);
         await ChemicalRegisterSeed.AddDocumentAsync(ChemicalsDbContext, chemicalId, ChemicalsBase.Infrastructure.Data.Enums.ChemicalDocumentType.Sds, language: "en");
@@ -111,7 +112,7 @@ public class ChemicalExportServiceTests : ChemicalTestBase
         var (_, rows) = XlsxTestReader.Read(file.Content);
         Assert.That(rows, Has.Count.EqualTo(2), "header + the one open placement of this property");
         Assert.That(rows[1][0], Is.EqualTo("Karate 2,5 WG"));
-        Assert.That(rows[1][4], Is.EqualTo("=HYPERLINK(\"x\")"), "notes stay literal text");
+        Assert.That(rows[1][rows[0].IndexOf("ChemicalColumnPlacement")], Is.EqualTo("=HYPERLINK(\"x\")"), "notes stay literal text");
         Assert.That(file.ContentType, Is.EqualTo(ChemicalExportService.XlsxContentType));
     }
 
@@ -252,5 +253,77 @@ public class ChemicalExportServiceTests : ChemicalTestBase
         Assert.That(Encoding.ASCII.GetString(pdf.Content, 0, 5), Is.EqualTo("%PDF-"));
         Assert.That(inventoryRows, Has.Count.EqualTo(1));
         Assert.That(removedRows, Has.Count.EqualTo(1));
+    }
+    // ---- the Ejendom column and "All properties" (the W1/W6 picker's "All") ----
+
+    private static List<string> Column(List<List<string>> rows, string header)
+    {
+        var index = rows[0].IndexOf(header);
+        Assert.That(index, Is.GreaterThanOrEqualTo(0), $"no {header} column in [{string.Join(", ", rows[0])}]");
+        return rows.Skip(1).Select(r => r[index]).ToList();
+    }
+
+    [Test]
+    public async Task InventoryXlsx_HasAPropertyColumnBeforeTheLocation_LikeTheGrid()
+    {
+        var a = await ArrangeAsync(stock: false);
+
+        var (_, rows) = XlsxTestReader.Read((await CreateSut().InventoryXlsxAsync(TestUserId, a.PropertyId, null)).Content);
+
+        Assert.That(rows[0].IndexOf("ChemicalPropertyLabel"), Is.EqualTo(rows[0].IndexOf("ChemicalColumnLocation") - 1));
+        Assert.That(Column(rows, "ChemicalPropertyLabel"), Is.EqualTo(new[] { a.PropertyName, a.PropertyName }));
+    }
+
+    [Test]
+    public async Task AllPropertiesInventoryXlsx_CoversTheGivenOpenPlacementsOfEveryProperty_WithTheirPropertyNames()
+    {
+        var a = await ArrangeAsync(stock: false);
+        var b = await ArrangeAsync(stock: true);
+
+        var file = await CreateSut().AllPropertiesInventoryXlsxAsync(TestUserId, [a.Open1, a.Closed, b.Open1, b.Open2]);
+
+        var (sheet, rows) = XlsxTestReader.Read(file.Content);
+        Assert.That(sheet, Is.EqualTo("ChemicalInventoryExportTitle"));
+        Assert.That(rows, Has.Count.EqualTo(4), "header + the three open placements; the closed one is not exported");
+        Assert.That(Column(rows, "ChemicalPropertyLabel"), Is.EquivalentTo(new[] { a.PropertyName, b.PropertyName, b.PropertyName }));
+        var quantities = rows.Skip(1).ToDictionary(
+            r => (r[rows[0].IndexOf("ChemicalPropertyLabel")], r[rows[0].IndexOf("ChemicalColumnPlacement")]),
+            r => r[rows[0].IndexOf("ChemicalColumnQuantity")]);
+        Assert.That(quantities[(b.PropertyName, "Hylde 2")], Is.EqualTo("2"), "a property with stock shows its balance");
+        Assert.That(quantities[(a.PropertyName, "=HYPERLINK(\"x\")")], Is.Empty, "a property without stock shows none");
+        Assert.That(file.FileName, Is.EqualTo("ChemicalInventoryExportTitle - ChemicalAllProperties - 2026-09-29.xlsx"));
+    }
+
+    [Test]
+    public async Task AllPropertiesInventoryXlsx_WithoutIds_ExportsEveryOpenPlacementOfEveryProperty()
+    {
+        var a = await ArrangeAsync(stock: false);
+        var b = await ArrangeAsync(stock: false);
+
+        var (_, rows) = XlsxTestReader.Read((await CreateSut().AllPropertiesInventoryXlsxAsync(TestUserId, null)).Content);
+
+        var properties = Column(rows, "ChemicalPropertyLabel");
+        Assert.That(properties.Count(p => p == a.PropertyName), Is.EqualTo(2));
+        Assert.That(properties.Count(p => p == b.PropertyName), Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task AllPropertiesHistoryXlsx_ListsTheEventsOfTheGivenProperties_WithThePropertyColumn()
+    {
+        var a = await ArrangeAsync(stock: false);
+        var b = await ArrangeAsync(stock: false);
+        var notAsked = await ArrangeAsync(stock: false);
+        var today = DateTime.UtcNow.Date;
+        var query = new ChemicalHistoryQuery(today.AddDays(-1), today.AddDays(1), null, null, null);
+        var history = new ChemicalHistoryService(BackendConfigurationPnDbContext!, new ChemicalRegisterReader(ChemicalsDbContext!), Names);
+        var expected = (await history.GetAllAsync(a.PropertyId, query)).Count + (await history.GetAllAsync(b.PropertyId, query)).Count;
+
+        var file = await CreateSut().AllPropertiesHistoryXlsxAsync([a.PropertyId, b.PropertyId], query);
+
+        var (_, rows) = XlsxTestReader.Read(file.Content);
+        Assert.That(rows, Has.Count.EqualTo(expected + 1));
+        Assert.That(Column(rows, "ChemicalPropertyLabel").Distinct(), Is.EquivalentTo(new[] { a.PropertyName, b.PropertyName }));
+        Assert.That(Column(rows, "ChemicalPropertyLabel"), Does.Not.Contain(notAsked.PropertyName));
+        Assert.That(file.FileName, Is.EqualTo("ChemicalHistoryTitle - ChemicalAllProperties - 2026-09-29.xlsx"));
     }
 }

@@ -68,12 +68,34 @@ public class ChemicalExportService(
     public async Task<ChemicalExportFile> InventoryXlsxAsync(int userId, int propertyId, IReadOnlyCollection<int> placementIds)
     {
         var model = await LoadAsync(userId, propertyId).ConfigureAwait(false);
-        var stock = model.Properties.FirstOrDefault(p => p.PropertyId == propertyId)?.StockEnabled ?? false;
+        return InventoryXlsx(model, p => p.PropertyId == propertyId, placementIds, new ChemicalInventoryLookup(model).PropertyName(propertyId));
+    }
+
+    public async Task<ChemicalExportFile> AllPropertiesInventoryXlsxAsync(int userId, IReadOnlyCollection<int> placementIds)
+    {
+        var model = await inventory.GetAllPropertiesInventoryAsync(ChemicalCaller.Web(userId)).ConfigureAwait(false);
+        return InventoryXlsx(model, _ => true, placementIds, T(K.ChemicalAllProperties));
+    }
+
+    /// <summary>
+    /// The W1 Excel: the open placements of <paramref name="model"/> that <paramref name="include"/> keeps (and, when
+    /// given, whose id the page showed), each with its property (the grid's Ejendom column). The stock columns are
+    /// there when any exported property keeps stock; a row of a property without stock leaves them empty.
+    /// </summary>
+    private ChemicalExportFile InventoryXlsx(ChemicalInventoryModel model, Func<ChemicalPlacementModel, bool> include,
+        IReadOnlyCollection<int> placementIds, string fileNameProperty)
+    {
+        var stockByProperty = model.Properties.ToDictionary(p => p.PropertyId, p => p.StockEnabled);
+        var stock = stockByProperty.Values.Any(enabled => enabled);
         var wanted = placementIds?.ToHashSet();
         var today = ChemicalAlertRules.CopenhagenToday(UtcNow);
         var lookup = new ChemicalInventoryLookup(model);
 
-        var headers = new List<string> { T(K.ChemicalColumnProduct), T(K.ChemicalColumnRegistrationNo), T(K.ChemicalColumnStatus), T(K.ChemicalColumnLocation), T(K.ChemicalColumnPlacement) };
+        var headers = new List<string>
+        {
+            T(K.ChemicalColumnProduct), T(K.ChemicalColumnRegistrationNo), T(K.ChemicalColumnStatus),
+            T(K.ChemicalPropertyLabel), T(K.ChemicalColumnLocation), T(K.ChemicalColumnPlacement),
+        };
         if (stock)
         {
             headers.AddRange([T(K.ChemicalColumnQuantity), T(K.ChemicalColumnUnit)]);
@@ -82,8 +104,10 @@ public class ChemicalExportService(
         headers.AddRange([T(K.ChemicalColumnSalesDeadline), T(K.ChemicalColumnUseAndPossessionDeadline), T(K.ChemicalColumnRequiresAction), T(K.ChemicalColumnRegisteredBy), T(K.ChemicalColumnRegisteredAt)]);
 
         var rows = model.Placements
-            .Where(p => p.RemovedAt == null && p.PropertyId == propertyId && (wanted == null || wanted.Contains(p.Id)))
-            .OrderBy(p => lookup.Location(p.LocationId)?.SortOrder ?? int.MaxValue)
+            .Where(p => p.RemovedAt == null && include(p) && (wanted == null || wanted.Contains(p.Id)))
+            .OrderBy(p => lookup.PropertyName(p.PropertyId), TagNameComparer.Danish)
+            .ThenBy(p => p.PropertyId)
+            .ThenBy(p => lookup.Location(p.LocationId)?.SortOrder ?? int.MaxValue)
             .ThenBy(p => lookup.Entry(p.ChemicalId)?.Name ?? string.Empty, TagNameComparer.Danish)
             .ThenBy(p => p.LocationId)
             .ThenBy(p => p.Id)
@@ -93,12 +117,13 @@ public class ChemicalExportService(
                 var row = new List<object>
                 {
                     lookup.ProductName(p.ChemicalId), entry?.RegistrationNo ?? string.Empty, entry?.StatusText ?? string.Empty,
-                    lookup.Location(p.LocationId)?.Name ?? string.Empty, p.PlacementNote ?? string.Empty,
+                    lookup.PropertyName(p.PropertyId), lookup.Location(p.LocationId)?.Name ?? string.Empty, p.PlacementNote ?? string.Empty,
                 };
                 if (stock)
                 {
-                    row.Add(p.Unit is null ? (object)string.Empty : WithoutTrailingZeros(p.Balance));
-                    row.Add(ChemicalHistoryDetailsFormatter.Unit(p.Unit));
+                    var counted = stockByProperty.GetValueOrDefault(p.PropertyId) && p.Unit is not null;
+                    row.Add(counted ? WithoutTrailingZeros(p.Balance) : string.Empty);
+                    row.Add(counted ? ChemicalHistoryDetailsFormatter.Unit(p.Unit) : string.Empty);
                 }
 
                 row.AddRange([
@@ -111,7 +136,7 @@ public class ChemicalExportService(
                 return (IReadOnlyList<object>)row;
             });
 
-        return Xlsx(K.ChemicalInventoryExportTitle, lookup.PropertyName(propertyId), headers, rows);
+        return Xlsx(K.ChemicalInventoryExportTitle, fileNameProperty, headers, rows);
     }
 
     public async Task<ChemicalExportFile> RemovedPlacementsXlsxAsync(int userId, int propertyId)
@@ -146,23 +171,49 @@ public class ChemicalExportService(
         var events = await history.GetAllAsync(propertyId, query).ConfigureAwait(false);
         var propertyName = await dbContext.Properties.AsNoTracking().Where(p => p.Id == propertyId)
             .Select(p => p.Name).FirstOrDefaultAsync().ConfigureAwait(false) ?? string.Empty;
-        string[] headers =
-        [
-            T(K.ChemicalColumnTime), T(K.ChemicalColumnUser), T(K.ChemicalColumnAction), T(K.ChemicalColumnProduct),
-            T(K.ChemicalColumnRegistrationNo), T(K.ChemicalColumnLocation), T(K.ChemicalColumnDetails),
-        ];
-        var rows = events.Select(e => (IReadOnlyList<object>)new object[]
+        return HistoryXlsx(events, propertyName, withProperty: false);
+    }
+
+    public async Task<ChemicalExportFile> AllPropertiesHistoryXlsxAsync(IReadOnlyCollection<int> propertyIds, ChemicalHistoryQuery query)
+    {
+        var events = await history.GetAllForPropertiesAsync(propertyIds, query).ConfigureAwait(false);
+        return HistoryXlsx(events, T(K.ChemicalAllProperties), withProperty: true);
+    }
+
+    /// <summary>The W6 Excel; <paramref name="withProperty"/> adds the Ejendom column the page shows under "All".</summary>
+    private ChemicalExportFile HistoryXlsx(IReadOnlyList<ChemicalHistoryEventModel> events, string fileNameProperty, bool withProperty)
+    {
+        var headers = new List<string>
         {
-            Local(e.At, "dd-MM-yyyy HH:mm"),
-            e.UserId == 0 ? T(K.ChemicalSystemUser) : e.UserName,
-            T(ChemicalHistoryDetailsFormatter.ActionKey(e.Action)),
-            e.ProductName,
-            e.RegistrationNo,
-            e.LocationName,
-            ChemicalHistoryDetailsFormatter.Format(e, T),
+            T(K.ChemicalColumnTime), T(K.ChemicalColumnUser), T(K.ChemicalColumnAction), T(K.ChemicalColumnProduct),
+            T(K.ChemicalColumnRegistrationNo),
+        };
+        if (withProperty)
+        {
+            headers.Add(T(K.ChemicalPropertyLabel));
+        }
+
+        headers.AddRange([T(K.ChemicalColumnLocation), T(K.ChemicalColumnDetails)]);
+        var rows = events.Select(e =>
+        {
+            var row = new List<object>
+            {
+                Local(e.At, "dd-MM-yyyy HH:mm"),
+                e.UserId == 0 ? T(K.ChemicalSystemUser) : e.UserName,
+                T(ChemicalHistoryDetailsFormatter.ActionKey(e.Action)),
+                e.ProductName,
+                e.RegistrationNo,
+            };
+            if (withProperty)
+            {
+                row.Add(e.PropertyName);
+            }
+
+            row.AddRange([e.LocationName, ChemicalHistoryDetailsFormatter.Format(e, T)]);
+            return (IReadOnlyList<object>)row;
         });
 
-        return Xlsx(K.ChemicalHistoryTitle, propertyName, headers, rows);
+        return Xlsx(K.ChemicalHistoryTitle, fileNameProperty, headers, rows);
     }
 
     /// <summary>The database column keeps a fixed scale ("2.000"); the sheet shows the number as typed ("2").</summary>

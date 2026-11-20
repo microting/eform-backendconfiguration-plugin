@@ -39,7 +39,7 @@ function event(partial: Partial<ChemicalHistoryEventModel>): ChemicalHistoryEven
     placementId: null, chemicalId: null, productName: '', registrationNo: '', locationId: null, locationName: '',
     targetLocationId: null, targetLocationName: '', amount: null, unit: null, balanceAfter: null, removalReason: null,
     note: '', field: '', oldValue: '', newValue: '', status: null, statusText: '', threshold: null, deadlineKind: null,
-    pushCount: 0, emailCount: 0, workerName: '', permissionsAdded: [], permissionsRemoved: [], ...partial,
+    pushCount: 0, emailCount: 0, workerName: '', permissionsAdded: [], permissionsRemoved: [], propertyId: 0, propertyName: '', ...partial,
   };
 }
 

@@ -920,6 +920,7 @@ export const skSK = {
   'Chemicals: Export authority list': 'Zoznam chemikálií pre Úrad pre pracovné prostredie (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) aktuálneho filtra',
   'Chemicals: Export removed placements': 'Chemikálie odstránené za posledných 12 mesiacov (Excel)',
+  'Chemicals: Select a property to export': 'Vyberte nehnuteľnosť na export',
   'Chemicals: Register placement': 'Zaregistrujte chemikáliu na mieste',
   'Chemicals: Search inventory hint': 'Produkt, registračné číslo, miesto skladovania',
   'Chemicals: No placements': 'Zatiaľ tu nie sú registrované žiadne chemikálie.',

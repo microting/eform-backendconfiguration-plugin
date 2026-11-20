@@ -920,6 +920,7 @@ export const ltLT = {
   'Chemicals: Export authority list': 'Darbo aplinkos tarnybos cheminių medžiagų sąrašas (PDF)',
   'Chemicals: Export current filter': 'Dabartinio filtro „Excel“ (.xlsx) failas',
   'Chemicals: Export removed placements': 'Per pastaruosius 12 mėnesių pašalintos cheminės medžiagos (Excel)',
+  'Chemicals: Select a property to export': 'Pasirinkite nekilnojamąjį turtą eksportui',
   'Chemicals: Register placement': 'Cheminės medžiagos registravimas tam tikroje vietoje',
   'Chemicals: Search inventory hint': 'Produktas, registracijos numeris, sandėliavimo vieta',
   'Chemicals: No placements': 'Čia dar nėra registruotų cheminių medžiagų.',

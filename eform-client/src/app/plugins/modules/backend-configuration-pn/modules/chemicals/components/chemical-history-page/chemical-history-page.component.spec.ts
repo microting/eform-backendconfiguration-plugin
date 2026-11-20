@@ -19,7 +19,7 @@ import {ChemicalHistoryPageComponent} from './chemical-history-page.component';
 
 import {captureSaveAs} from '../../../../testing/capture-save-as';
 
-type View = {propertyId: number | null; filters: ChemicalHistoryFiltersModel};
+type View = {propertyId: number | null; allProperties?: boolean; filters: ChemicalHistoryFiltersModel};
 
 describe('ChemicalHistoryPageComponent', () => {
   let capture: ReturnType<typeof captureSaveAs>;
@@ -36,10 +36,13 @@ describe('ChemicalHistoryPageComponent', () => {
 
   const page = (total = 214) => ({success: true, model: {events: [], total, users: [{userId: 5, name: 'Mette Larsen'}]}});
 
-  function build(opts: {propertyId?: number | null; history?: Observable<unknown>; locations?: unknown[]; inventory?: Observable<unknown>} = {}): ChemicalHistoryPageComponent {
+  function build(opts: {
+    propertyId?: number | null; history?: Observable<unknown>; locations?: unknown[]; inventory?: Observable<unknown>; allProperties?: boolean;
+  } = {}): ChemicalHistoryPageComponent {
     saveAs.mockClear();
     view$ = new BehaviorSubject<View>({
-      propertyId: opts.propertyId === undefined ? 3 : opts.propertyId,
+      propertyId: opts.allProperties ? null : opts.propertyId === undefined ? 3 : opts.propertyId,
+      allProperties: !!opts.allProperties,
       filters: {...chemicalsInitialState.historyFilters},
     });
     store = {
@@ -58,6 +61,18 @@ describe('ChemicalHistoryPageComponent', () => {
         locations: opts.locations ?? [location(10, 'Lade', {propertyId: 3}), location(11, 'Gammel', {propertyId: 3, archived: true})],
       }})),
       exportHistory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik.xlsx'})),
+      getAllPropertiesHistory: vi.fn().mockReturnValue(opts.history ?? of(page())),
+      // W6 never needs the placements of every property: the light locations route is enough.
+      getAllPropertiesInventory: vi.fn(),
+      getAllPropertiesLocations: vi.fn().mockReturnValue(of({success: true, model: {
+        properties: [
+          {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
+          {propertyId: 4, name: 'Østergård', permissions: null, stockEnabled: false, callerWorkerId: null},
+        ],
+        locations: [location(20, 'Værksted', {propertyId: 4}), location(10, 'Lade', {propertyId: 3}),
+          location(11, 'Gammel', {propertyId: 3, archived: true})],
+      }})),
+      exportAllPropertiesHistory: vi.fn().mockReturnValue(of({blob: new Blob(['x']), fileName: 'Kemihistorik - Alle ejendomme.xlsx'})),
     };
     toastr = {error: vi.fn()};
     const injector = Injector.create({providers: [
@@ -302,5 +317,53 @@ describe('ChemicalHistoryPageComponent', () => {
     const component = build();
 
     expect(component.userOptions).toBe(component.userOptions);
+  });
+  describe('every property at once (the picker\'s "All", owner 2026-11-20)', () => {
+    it('reads the history of every property and their locations, marked with the property', () => {
+      const component = build({allProperties: true});
+
+      expect(chemicals.getAllPropertiesHistory).toHaveBeenLastCalledWith(expect.objectContaining({from: '2026-08-31', to: '2026-09-29', page: 0}));
+      expect(chemicals.getHistory).not.toHaveBeenCalled();
+      expect(chemicals.getPropertyInventory).not.toHaveBeenCalled();
+      expect(chemicals.getAllPropertiesLocations).toHaveBeenCalledTimes(1);
+      expect(chemicals.getAllPropertiesInventory).not.toHaveBeenCalled();
+      expect(component.allProperties).toBe(true);
+      expect(component.total).toBe(214);
+      expect(component.locationOptions).toEqual([
+        {id: 10, name: 'Engvej 12 – Lade'},
+        {id: 20, name: 'Østergård – Værksted'},
+        {id: 11, name: 'Engvej 12 – Gammel (Chemicals: Archived)'},
+      ]);
+    });
+
+    it('exports the whole filtered period of every property', () => {
+      const component = build({allProperties: true});
+
+      component.export();
+
+      expect(chemicals.exportAllPropertiesHistory).toHaveBeenCalledWith(expect.objectContaining({page: 0}));
+      expect(chemicals.exportHistory).not.toHaveBeenCalled();
+      expect(saveAs).toHaveBeenCalledWith(expect.any(Blob), 'Kemihistorik - Alle ejendomme.xlsx');
+    });
+
+    it('goes back to the one property when the picker leaves "All"', () => {
+      build({allProperties: true});
+
+      view$.next({propertyId: 3, allProperties: false, filters: {...chemicalsInitialState.historyFilters}});
+
+      expect(chemicals.getHistory).toHaveBeenLastCalledWith(3, expect.objectContaining({page: 0}));
+      expect(chemicals.getPropertyInventory).toHaveBeenLastCalledWith(3);
+    });
+
+    it('switching to "All" reloads the locations and forgets the old users', () => {
+      const component = build();
+      chemicals.getAllPropertiesHistory.mockReturnValue(new Subject<unknown>());
+
+      view$.next({propertyId: null, allProperties: true, filters: {...chemicalsInitialState.historyFilters}});
+
+      expect(chemicals.getAllPropertiesLocations).toHaveBeenCalledTimes(1);
+      expect(component.users).toEqual([]);
+      expect(component.total).toBe(0);
+    });
   });
 });

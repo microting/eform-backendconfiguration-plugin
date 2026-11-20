@@ -920,6 +920,7 @@ export const isIS = {
   'Chemicals: Export authority list': 'Efnalisti fyrir Vinnueftirlitið (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) núverandi síu',
   'Chemicals: Export removed placements': 'Efni fjarlægð síðustu 12 mánuði (Excel)',
+  'Chemicals: Select a property to export': 'Veldu eign til að flytja út',
   'Chemicals: Register placement': 'Skrá efni á staðsetningu',
   'Chemicals: Search inventory hint': 'Vara, skráningarnúmer, geymslustaður',
   'Chemicals: No placements': 'Engin efni eru skráð hér ennþá.',

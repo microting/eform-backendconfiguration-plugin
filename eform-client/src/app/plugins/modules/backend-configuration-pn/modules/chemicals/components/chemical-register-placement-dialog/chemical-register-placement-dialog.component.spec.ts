@@ -11,7 +11,7 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
   let chemicals: {searchRegister: Mock; registerPlacement: Mock};
   let dialogRef: {close: Mock};
 
-  function build(stockEnabled: boolean): ChemicalRegisterPlacementDialogComponent {
+  function build(stockEnabled: boolean, data?: Record<string, unknown>): ChemicalRegisterPlacementDialogComponent {
     chemicals = {
       searchRegister: vi.fn().mockReturnValue(of({success: true, model: {total: 1, entries: [
         {chemicalId: 200, name: 'Karate 2,5 WG', registrationNo: '1-212', products: [{productId: 2000, name: 'Karate 1 L'}]},
@@ -22,7 +22,7 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
     const injector = Injector.create({providers: [
       {provide: BackendConfigurationPnChemicalsService, useValue: chemicals},
       {provide: MatDialogRef, useValue: dialogRef},
-      {provide: MAT_DIALOG_DATA, useValue: {
+      {provide: MAT_DIALOG_DATA, useValue: data ?? {
         propertyId: 3, stockEnabled,
         locations: [{id: 10, name: 'Lade', archived: false}, {id: 11, name: 'Gammel', archived: true}],
       }},
@@ -270,5 +270,79 @@ describe('ChemicalRegisterPlacementDialogComponent', () => {
     component.select(component.results[0]);
 
     expect(component.productId).toBe(2001);
+  });
+  describe('the Ejendom field (W1 "All", owner 2026-11-20)', () => {
+    const properties = [
+      {propertyId: 3, name: 'Engvej 12', permissions: null, stockEnabled: false, callerWorkerId: null},
+      {propertyId: 4, name: 'Østergård', permissions: null, stockEnabled: true, callerWorkerId: null},
+      {propertyId: 5, name: 'Tom gård', permissions: null, stockEnabled: false, callerWorkerId: null},
+    ];
+    const locations = [
+      {id: 10, propertyId: 3, name: 'Lade', archived: false},
+      {id: 20, propertyId: 4, name: 'Værksted', archived: false},
+      {id: 21, propertyId: 4, name: 'Kemirum', archived: false},
+      {id: 22, propertyId: 4, name: 'Gammel', archived: true},
+      {id: 50, propertyId: 5, name: 'Arkiv', archived: true},
+    ];
+    const underAll = () => build(false, {propertyId: null, stockEnabled: true, properties, locations});
+
+    it('asks for the property first under "All", offering only properties with an active location', () => {
+      const component = underAll();
+
+      expect(component.choosesProperty).toBe(true);
+      expect(component.propertyOptions.map((p) => p.propertyId)).toEqual([3, 4]);
+      expect(component.chosenPropertyId).toBeNull();
+      expect(component.locations).toEqual([]);
+      expect(component.canSave).toBe(false);
+    });
+
+    it('offers the active locations of the chosen property, and its stock flag', () => {
+      const component = underAll();
+
+      component.chooseProperty(4);
+
+      expect(component.locations.map((l) => l.id)).toEqual([20, 21]);
+      expect(component.locationId).toBeNull();
+      expect(component.stockEnabled).toBe(true);
+
+      component.chooseProperty(3);
+
+      expect(component.locations.map((l) => l.id)).toEqual([10]);
+      // The one location is picked for the user, as for a single property.
+      expect(component.locationId).toBe(10);
+      expect(component.stockEnabled).toBe(false);
+    });
+
+    it('drops a location of the previous property when the property changes', () => {
+      const component = underAll();
+      component.chooseProperty(4);
+      component.locationId = 21;
+
+      component.chooseProperty(3);
+
+      expect(component.locationId).toBe(10);
+    });
+
+    it('registers at the chosen location (the server takes the property from it)', () => {
+      const component = underAll();
+      component.chooseProperty(4);
+      component.locationId = 20;
+      component.query = 'karate';
+      component.search();
+      component.select(component.results[0]);
+
+      component.save();
+
+      expect(chemicals.registerPlacement).toHaveBeenCalledWith(expect.objectContaining({locationId: 20, chemicalId: 200}));
+    });
+
+    it('presets the selected property and keeps the field read-only', () => {
+      const component = build(false, {propertyId: 4, stockEnabled: true, properties: [properties[1]], locations: locations.slice(1, 4)});
+
+      expect(component.choosesProperty).toBe(false);
+      expect(component.chosenPropertyId).toBe(4);
+      expect(component.locations.map((l) => l.id)).toEqual([20, 21]);
+      expect(component.stockEnabled).toBe(true);
+    });
   });
 });

@@ -5,3 +5,5 @@
 .chemicals-banner { margin-bottom: var(--spacing-lg); }
 .chemicals-link { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 ::ng-deep .chemicals-drawer-panel .mat-mdc-dialog-surface { border-radius: var(--md-radius) 0 0 var(--md-radius); }
+/* The export menu note under "All": why the per-property files are off. */
+.chemicals-menu-hint { display: block; max-width: 260px; padding: var(--spacing-sm, 8px) var(--spacing-lg, 16px) 0; }

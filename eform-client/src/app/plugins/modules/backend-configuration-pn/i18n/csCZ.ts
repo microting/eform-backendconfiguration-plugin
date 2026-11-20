@@ -920,6 +920,7 @@ export const csCZ = {
   'Chemicals: Export authority list': 'Seznam chemikálií pro Úřad pro pracovní prostředí (PDF)',
   'Chemicals: Export current filter': 'Excel (.xlsx) aktuálního filtru',
   'Chemicals: Export removed placements': 'Chemikálie odstraněné za posledních 12 měsíců (Excel)',
+  'Chemicals: Select a property to export': 'Vyberte nemovitost pro export',
   'Chemicals: Register placement': 'Registrace chemikálie na místě',
   'Chemicals: Search inventory hint': 'Produkt, registrační číslo, skladovací místo',
   'Chemicals: No placements': 'Zatím zde nejsou registrovány žádné chemikálie.',

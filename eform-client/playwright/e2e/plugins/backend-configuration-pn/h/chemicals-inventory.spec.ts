@@ -24,6 +24,9 @@ const approved = `KemiOK${rand}`;
 const expired = `KemiUD${rand}`;
 const lade = `Lade-${rand}`;
 const kemirum = `Kemirum-${rand}`;
+/** The second property of the "All" scenario, with its own location. */
+const second = kemiProperty('Kemi-all', rand);
+const skur = `Skur-${rand}`;
 
 /** The md5 file names of the seeded documents of `approved`; `expired` has none. */
 const LABEL_MD5 = 'a1'.repeat(16);
@@ -83,7 +86,8 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
     test.setTimeout(150000);
     const kemi = await open(page, 'inventory');
 
-    await kemi.registerPlacement(approved, lade, 'Top shelf');
+    // One property selected: the dialog's Ejendom field shows it, read-only.
+    await kemi.registerPlacement(approved, lade, 'Top shelf', undefined, property.name);
     await kemi.registerPlacement(expired, lade, 'Under the sink');
 
     await expect(kemi.inventoryRow(expired)).toHaveClass(/chemical-row--overdue/, { timeout: UI_TIMEOUT });
@@ -238,5 +242,56 @@ test.describe.serial('Kemi W1/W2 - inventory', () => {
 
     await expect(kemi.locationRow(kemirum).locator('[id^="chemicalLocationArchive-"]')).toBeDisabled({ timeout: API_TIMEOUT });
     await expect(kemi.locationRow(lade).locator('[id^="chemicalLocationArchive-"]')).toBeEnabled({ timeout: UI_TIMEOUT });
+  });
+  test('"All": every property in one list with Ejendom, per-property exports locked, history across both (owner 2026-11-20)', async ({ page }) => {
+    test.setTimeout(300000);
+    const kemi = await BackendConfigurationChemicalsPage.login(page);
+    await kemi.createPropertyWithLocations(second, [skur]);
+
+    // No ?propertyId=: Beholdning opens on "All" and reads every property in one call.
+    const everyProperty = kemi.waitForChemicalsCall('GET', /^inventory$/);
+    await kemi.gotoScreen('inventory');
+    await everyProperty;
+    await expect(page).not.toHaveURL(/propertyId=/, { timeout: UI_TIMEOUT });
+    await expect(kemi.inventoryRowOf(approved, property.name)).toHaveCount(1, { timeout: API_TIMEOUT });
+
+    // "Registrér placering" asks for the property first; the row then shows under the second property.
+    await kemi.registerPlacement(approved, skur, 'Skur shelf', second.name);
+    await expect(kemi.inventoryRowOf(approved, second.name)).toHaveCount(1, { timeout: API_TIMEOUT });
+    await expect(kemi.inventoryRowOf(approved, property.name)).toHaveCount(1, { timeout: UI_TIMEOUT });
+
+    // The location filter names the property: "<Ejendom> – <Lokation>".
+    await kemi.selectMtxOption('#chemicalsLocationFilter', `${second.name} – ${skur}`);
+    await expect(kemi.inventoryRowOf(approved, property.name)).toHaveCount(0, { timeout: UI_TIMEOUT });
+    await expect(kemi.inventoryRowOf(approved, second.name)).toHaveCount(1, { timeout: UI_TIMEOUT });
+
+    // The authority list and the removed placements stay per property; the Excel covers every property.
+    await expect(page.locator('#chemicalsExportBtn')).toBeEnabled({ timeout: API_TIMEOUT });
+    await page.locator('#chemicalsExportBtn').click({ timeout: UI_TIMEOUT });
+    await expect(page.locator('.cdk-overlay-container #chemicalsExportAuthorityList')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await expect(page.locator('.cdk-overlay-container #chemicalsExportRemoved')).toBeDisabled({ timeout: UI_TIMEOUT });
+    await expect(page.locator('.cdk-overlay-container #chemicalsExportSelectPropertyHint')).toBeVisible({ timeout: UI_TIMEOUT });
+    await page.keyboard.press('Escape');
+    await page.locator('.cdk-overlay-container #chemicalsExportInventory').waitFor({ state: 'hidden', timeout: UI_TIMEOUT });
+    const excel = await kemi.exportFromInventory('chemicalsExportInventory');
+    // "<title> - <all properties> - <yyyy-MM-dd>.xlsx": the server's ChemicalAllProperties text in the user's language (da or en-US).
+    expect(excel).toMatch(/ - (Alle ejendomme|All properties) - \d{4}-\d{2}-\d{2}\.xlsx$/);
+    expect(excel).not.toContain(property.name);
+    expect(excel).not.toContain(second.name);
+
+    // A deeplink still opens one property.
+    const propertyId = await propertyIdByName(second.name);
+    await kemi.gotoScreen('inventory', `?propertyId=${propertyId}`);
+    await expect(kemi.propertySelect()).toContainText(second.name, { timeout: API_TIMEOUT });
+    await expect(kemi.inventoryRowOf(approved, second.name)).toHaveCount(1, { timeout: API_TIMEOUT });
+    await expect(kemi.inventoryRowOf(approved, property.name)).toHaveCount(0, { timeout: UI_TIMEOUT });
+
+    // Historik opens on "All" too and lists the events of both properties with their Ejendom.
+    const history = kemi.waitForChemicalsCall('POST', /^history$/);
+    await kemi.gotoScreen('history');
+    await history;
+    await kemi.waitForHistoryLoaded();
+    await expect(kemi.historyRows().filter({ hasText: second.name }).first()).toBeVisible({ timeout: UI_TIMEOUT });
+    await expect(kemi.historyRows().filter({ hasText: property.name }).first()).toBeVisible({ timeout: UI_TIMEOUT });
   });
 });

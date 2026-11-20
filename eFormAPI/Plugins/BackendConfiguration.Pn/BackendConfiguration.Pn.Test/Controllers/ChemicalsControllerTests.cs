@@ -85,7 +85,9 @@ public class ChemicalsControllerTests
 
         Assert.That(routes, Is.EqualTo(new[]
         {
+            "GET api/backend-configuration-pn/chemicals/inventory",
             "GET api/backend-configuration-pn/chemicals/label/{fileName}",
+            "GET api/backend-configuration-pn/chemicals/locations",
             "GET api/backend-configuration-pn/chemicals/locations/{locationId:int}/photo",
             "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/inventory",
             "GET api/backend-configuration-pn/chemicals/properties/{propertyId:int}/permissions",
@@ -119,6 +121,46 @@ public class ChemicalsControllerTests
 
         Assert.That(result.Success, Is.True);
         await _inventory.Received(1).GetPropertyInventoryAsync(Arg.Is<ChemicalCaller>(c => c.IsWebAdmin && c.UserId == UserId), 1);
+    }
+
+    [Test]
+    public async Task GetAllPropertiesInventory_ActsAsAWebAdmin_AndReturnsTheServiceModel()
+    {
+        var sut = CreateSut();
+        var model = new ChemicalInventoryModel([], [], [], [], [], "", true);
+        _inventory.GetAllPropertiesInventoryAsync(Web).Returns(model);
+
+        var result = await sut.GetAllPropertiesInventory();
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Model, Is.SameAs(model));
+        await _inventory.Received(1).GetAllPropertiesInventoryAsync(Arg.Is<ChemicalCaller>(c => c.IsWebAdmin && c.UserId == UserId));
+    }
+
+    [Test]
+    public async Task GetAllPropertiesLocations_ActsAsAWebAdmin_AndReturnsTheLocationsWithTheirProperties()
+    {
+        var sut = CreateSut();
+        var model = new ChemicalPropertyLocationsModel([], []);
+        _inventory.GetAllPropertiesLocationsAsync(Web).Returns(model);
+
+        var result = await sut.GetAllPropertiesLocations();
+
+        Assert.That(result.Success, Is.True);
+        Assert.That(result.Model, Is.SameAs(model));
+        await _inventory.Received(1).GetAllPropertiesLocationsAsync(Arg.Is<ChemicalCaller>(c => c.IsWebAdmin && c.UserId == UserId));
+    }
+
+    [Test]
+    public async Task GetAllPropertiesInventory_Failure_IsAnUnsuccessfulResult()
+    {
+        var sut = CreateSut();
+        _inventory.GetAllPropertiesInventoryAsync(Web).ThrowsAsync(new ChemicalPermissionDeniedException("nope"));
+
+        var result = await sut.GetAllPropertiesInventory();
+
+        Assert.That(result.Success, Is.False);
+        Assert.That(result.Message, Does.Contain("nope"));
     }
 
     [Test]

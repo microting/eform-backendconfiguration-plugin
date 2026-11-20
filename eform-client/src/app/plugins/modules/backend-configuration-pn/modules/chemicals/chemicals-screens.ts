@@ -20,6 +20,8 @@ export interface ChemicalScreen {
   menuE2EId: string;
   /** The page the route renders. */
   component: Type<unknown>;
+  /** The property picker offers "All" here and opens on it (owner 2026-11-20); the other screens show one property. */
+  allProperties?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ export interface ChemicalScreen {
 export const CHEMICAL_SCREENS: ChemicalScreen[] = [
   {
     path: 'inventory',
+    allProperties: true,
     titleKey: 'Chemicals: Inventory title',
     menuE2EId: 'backend-configuration-pn-chemicals-inventory',
     component: ChemicalInventoryPageComponent,
@@ -54,6 +57,7 @@ export const CHEMICAL_SCREENS: ChemicalScreen[] = [
   },
   {
     path: 'history',
+    allProperties: true,
     titleKey: 'Chemicals: History title',
     menuE2EId: 'backend-configuration-pn-chemicals-history',
     component: ChemicalHistoryPageComponent,
