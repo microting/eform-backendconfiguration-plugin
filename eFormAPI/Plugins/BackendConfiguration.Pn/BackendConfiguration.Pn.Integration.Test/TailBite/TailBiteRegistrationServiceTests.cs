@@ -376,15 +376,47 @@ public class TailBiteRegistrationServiceTests : TailBiteTestBase
             () => sut.SavePhotoAsync(OtherSiteId, PropertyId, Guid.NewGuid(), regUuid, [3], "image/jpeg"));
     }
 
-    [Test]
-    public async Task GetPhoto_OtherProperty_Forbidden()
+    private static async Task AssertPhotoNotFound(Func<Task> call)
     {
+        var ex = await Assert.ThrowsAsync<TailBiteNotFoundException>(() => call());
+        Assert.That(ex!.Message, Is.EqualTo("Photo not found."));
+    }
+
+    [Test]
+    public async Task GetPhoto_UnknownUnstoredForeignAndSwitchedOff_AllAnswerTheSameNotFound()
+    {
+        // A stored photo of a live registration on the enabled tree: the caller is a worker there.
+        var (reg, _) = await SeedRegistrationAsync(Clock.GetUtcNow().UtcDateTime, false, (Pen309Id, 2, 0));
+        var stored = Guid.NewGuid();
+        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, stored, reg.ClientUuid, [1], "image/jpeg");
+        // A reservation whose bytes were never stored.
+        var reserved = Guid.NewGuid();
+        await SeedPhotoAsync(reserved, reg.ClientUuid);
+        // A stored photo of a live registration on a second, enabled property where the caller is no worker.
         var other = new Property { Name = "Ejendom To" };
         await other.Create(Db);
-        await new PropertyWorker { PropertyId = other.Id, WorkerId = OtherSiteId }.Create(Db); // works elsewhere only
-        var photo = Guid.NewGuid();
-        await NewSut().SavePhotoAsync(WorkerSiteId, PropertyId, photo, Guid.NewGuid(), [1], "image/jpeg");
-        await Assert.ThrowsAsync<TailBiteForbiddenException>(() => NewSut().GetPhotoAsync(OtherSiteId, photo));
+        await new TailBiteProperty { PropertyId = other.Id, Enabled = true, EnabledAt = Clock.GetUtcNow().UtcDateTime }.Create(Db);
+        await new PropertyWorker { PropertyId = other.Id, WorkerId = OtherSiteId }.Create(Db);
+        var otherReg = new TailBiteRegistration
+        {
+            PropertyId = other.Id, SiteId = OtherSiteId, ClientUuid = Guid.NewGuid(),
+            RegisteredAt = Clock.GetUtcNow().UtcDateTime, ReceivedAt = Clock.GetUtcNow().UtcDateTime, EffectiveAt = Clock.GetUtcNow().UtcDateTime
+        };
+        await otherReg.Create(Db);
+        var foreign = Guid.NewGuid();
+        await new TailBiteRegistrationPhoto
+        {
+            PhotoUuid = foreign, PropertyId = other.Id, UploadedBySiteId = OtherSiteId, RegistrationClientUuid = otherReg.ClientUuid,
+            SdkUploadedDataId = PhotoRow(stored).SdkUploadedDataId
+        }.Create(Db);
+        Db.ChangeTracker.Clear();
+
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, Guid.NewGuid()));
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, reserved));
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, foreign));
+
+        await Db.TailBiteProperties.Where(t => t.PropertyId == PropertyId).ExecuteUpdateAsync(x => x.SetProperty(t => t.Enabled, false));
+        await AssertPhotoNotFound(() => NewSut().GetPhotoAsync(WorkerSiteId, stored));
     }
 
     [Test]
