@@ -3,7 +3,7 @@ import {Component, ElementRef, Input, NgZone, OnDestroy, OnInit, TemplateRef, Vi
 import {MatDialog, MatDialogRef, MatDialogTitle, MatDialogContent, MatDialogActions} from '@angular/material/dialog';
 import {TranslateService, TranslatePipe} from '@ngx-translate/core';
 import {MtxGridColumn, MtxGridRowClassFormatter, MtxGrid} from '@ng-matero/extensions/grid';
-import {Subject, merge, of} from 'rxjs';
+import {Observable, Subject, merge, of} from 'rxjs';
 import {
   catchError,
   distinctUntilChanged,
@@ -59,6 +59,7 @@ import {NgIf, NgFor} from '@angular/common';
 import {MatIcon} from '@angular/material/icon';
 import {MatIconButton} from '@angular/material/button';
 import {MatTooltip} from '@angular/material/tooltip';
+import {ComplianceTailBiteSectionComponent} from '../compliance-tail-bite-section/compliance-tail-bite-section.component';
 
 /**
  * The Billeder cell's two i18n keys, held as constants because the plural one
@@ -209,7 +210,8 @@ interface ComplianceReportRowVm {
  */
 @Component({
   selector: 'app-compliance-report-view',
-  imports: [NgIf, NgFor, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions],
+  imports: [NgIf, NgFor, TranslatePipe, MatIcon, MatIconButton, MtxGrid, MatTooltip, MatDialogTitle, MatDialogContent, MatDialogActions,
+    ComplianceTailBiteSectionComponent],
   templateUrl: './compliance-report-view.component.html',
   styleUrls: ['./compliance-report-view.component.scss'],
 })
@@ -243,6 +245,12 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   /** Refreshes that are NOT a user gesture: after a delete or an edit. */
   private refresh$ = new Subject<void>();
+  /**
+   * This view's fetch trigger, built in `ngOnInit`. The Halebid section (#1517)
+   * subscribes to it too, so it queries on the same gestures with the same
+   * filter set — but on its own request: either can fail without the other.
+   */
+  fetchTrigger$!: Observable<void>;
   private deleteDialogRef: MatDialogRef<unknown> | null = null;
   private pendingDeleteId: number | null = null;
   /** The row the open confirm dialog was opened from — its NEXT row is landed on. */
@@ -287,13 +295,16 @@ export class ComplianceReportViewComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadMetaReferenceData();
 
-    merge(this.state.fetchRequested$, this.refresh$)
+    this.fetchTrigger$ = merge(this.state.fetchRequested$, this.refresh$).pipe(
+      // Drop triggers meant for another view (#1185). `resetToOverview()`
+      // emits while THIS child is still subscribed — the ngSwitch only swaps
+      // it out on the next change-detection pass — so without this guard the
+      // outgoing child would issue a request that is cancelled on destroy.
+      rxFilter(() => this.state.mode === 'report'),
+    );
+
+    this.fetchTrigger$
       .pipe(
-        // Drop triggers meant for another view (#1185). `resetToOverview()`
-        // emits while THIS child is still subscribed — the ngSwitch only swaps
-        // it out on the next change-detection pass — so without this guard the
-        // outgoing child would issue a request that is cancelled on destroy.
-        rxFilter(() => this.state.mode === 'report'),
         tap(() => {
           // A re-render detaches the row the confirm dialog was opened from.
           this.closeDeleteDialog();

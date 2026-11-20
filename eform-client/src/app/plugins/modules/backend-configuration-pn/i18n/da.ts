@@ -1369,4 +1369,16 @@ export const da = {
   "Only an administrator can change a leader's login": "Kun en administrator kan ændre en leders login",
   'Only administrators and leaders can do this': 'Kun administratorer og ledere kan gøre det',
   'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Flytningen ændrer, hvem der kan læse dokumenterne. Kun en administrator eller en leder kan gøre det.',
+  // Halebid section of the compliance report's Rapport (#1517).
+  'Tail biting: outbreaks in the period': 'Halebid: udbrud i perioden',
+  'No outbreaks in the period': 'Ingen udbrud i perioden',
+  'Outbreaks in the period': 'Udbrud i perioden',
+  'Closed in the period': 'Lukket i perioden',
+  'Bitten pigs': 'Bidte grise',
+  'of which {{n}} severe': 'heraf {{n}} alvorlige',
+  'Actions done': 'Handlinger udført',
+  '{{done}} of {{total}} done': '{{done}} af {{total}} udført',
+  'Risk assessed': 'Risikovurderet',
+  'Yes factors': 'Ja-faktorer',
+  'Not assessed': 'Mangler vurdering',
 };

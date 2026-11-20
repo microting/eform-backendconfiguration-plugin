@@ -4,3 +4,4 @@ export * from './compliance-pdf-preview-dialog/compliance-pdf-preview-dialog.com
 export * from './compliance-report-filters/compliance-report-filters.component';
 export * from './compliance-report-page/compliance-report-page.component';
 export * from './compliance-report-view/compliance-report-view.component';
+export * from './compliance-tail-bite-section/compliance-tail-bite-section.component';

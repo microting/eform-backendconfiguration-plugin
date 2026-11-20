@@ -1,5 +1,10 @@
-import {describe, it, expect} from 'vitest';
-import {parseContentDispositionFileName} from './backend-configuration-pn-compliance-report.service';
+import {describe, it, expect, vi} from 'vitest';
+import {of} from 'rxjs';
+import {
+  BackendConfigurationPnComplianceReportService,
+  parseContentDispositionFileName,
+} from './backend-configuration-pn-compliance-report.service';
+import {ComplianceReportRequestModel} from '../models';
 
 /**
  * The `Content-Disposition` parser behind the Compliance export (#1169/#1189).
@@ -142,5 +147,41 @@ describe('parseContentDispositionFileName', () => {
     it('returns the caller fallback for a header carrying no filename', () => {
       expect(parseContentDispositionFileName('attachment', FALLBACK)).toBe(FALLBACK);
     });
+  });
+});
+
+/**
+ * The Halebid section's call (#1517): the controller's route, the shared filter
+ * body as-is, and no toast on failure — a failed section shows nothing.
+ */
+describe('BackendConfigurationPnComplianceReportService.tailBite', () => {
+  function build(response: unknown) {
+    const api = {postNoToast: vi.fn().mockReturnValue(of(response))};
+    const toastr = {error: vi.fn()};
+    const translate = {instant: vi.fn((key: string) => key)};
+    const service = new BackendConfigurationPnComplianceReportService(
+      api as any, toastr as any, translate as any, {} as any, {} as any,
+    );
+    return {api, toastr, service};
+  }
+
+  const model = {propertyId: 3, dateFrom: '2026-11-01', dateTo: '2026-11-30'} as unknown as ComplianceReportRequestModel;
+
+  it('posts the request model to the tail-bite route without the toasting post', () => {
+    const {api, service} = build({success: true, model: null});
+
+    service.tailBite(model).subscribe();
+
+    expect(api.postNoToast).toHaveBeenCalledWith('api/backend-configuration-pn/compliance-report/tail-bite', model);
+  });
+
+  it('does not toast a failed result', () => {
+    const {toastr, service} = build({success: false, message: 'Request body is required.'});
+    let seen: unknown;
+
+    service.tailBite(model).subscribe((res) => (seen = res));
+
+    expect(seen).toEqual({success: false, message: 'Request body is required.'});
+    expect(toastr.error).not.toHaveBeenCalled();
   });
 });

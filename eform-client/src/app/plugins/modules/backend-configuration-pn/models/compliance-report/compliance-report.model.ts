@@ -1,3 +1,5 @@
+import {TailBiteFactor, TailBiteFactorAnswers, TailBitePhotoRef} from '../tail-bite';
+
 /**
  * Wire contract for the standalone Compliance page (#1160 / #1163),
  * mirroring `BackendConfiguration.Pn.Infrastructure.Models.ComplianceReport`
@@ -443,4 +445,67 @@ export interface ComplianceReportExportRequestModel extends ComplianceReportRequ
    * decides what the UI sends; until then the page sends `false`.
    */
   includeImageAppendix: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Halebid section of Rapport — `POST api/backend-configuration-pn/compliance-report/tail-bite`
+// (#1517). Mirrors the C# records in Services/TailBite/TailBiteComplianceReportModels.cs as Newtonsoft writes them:
+// camelCase, enums as numbers, every DateTime a UTC instant (an ISO string, or a Date once the host's DateInterceptor
+// has read it). The body is the same `ComplianceReportRequestModel` the eForm sections post.
+// ---------------------------------------------------------------------------
+
+/** A live (not withdrawn) action of the outbreak's risk assessment. */
+export interface TailBiteReportAction {
+  factor: TailBiteFactor;
+  description: string;
+  responsibleName: string;
+  followUpDate: string | Date;
+  doneAt: string | Date | null;
+  doneByName: string | null;
+}
+
+/** A non-cancelled registration behind the outbreak, once however many pens it covers (`pens` joined ", "). */
+export interface TailBiteReportRegistration {
+  id: number;
+  effectiveAt: string | Date;
+  pens: string;
+  minor: number;
+  severe: number;
+  /** The action type names joined ", "; empty = none. */
+  actionTypes: string;
+  registeredByName: string;
+  photos: TailBitePhotoRef[];
+}
+
+/** An outbreak open at some point in the report period. `answers` is null when it is not risk assessed. */
+export interface TailBiteReportOutbreak {
+  id: number;
+  propertyId: number;
+  propertyName: string;
+  /** The location's ancestors below the root plus itself, joined " › ". */
+  locationPath: string;
+  ruleVersion: number;
+  openedAt: string | Date;
+  assessedAt: string | Date | null;
+  closedAt: string | Date | null;
+  bittenPigs: number;
+  severePigs: number;
+  answers: TailBiteFactorAnswers | null;
+  actions: TailBiteReportAction[];
+  registrations: TailBiteReportRegistration[];
+}
+
+export interface TailBiteReportTotals {
+  outbreaks: number;
+  closedInPeriod: number;
+  bittenPigs: number;
+  severePigs: number;
+  actionsDone: number;
+  actionsTotal: number;
+}
+
+/** The Halebid section; the endpoint answers a null model when the caller sees no Halebid section. */
+export interface TailBiteComplianceReport {
+  outbreaks: TailBiteReportOutbreak[];
+  totals: TailBiteReportTotals;
 }

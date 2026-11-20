@@ -15,6 +15,7 @@ import {
   ComplianceReportPagedModel,
   ComplianceReportRequestModel,
   ComplianceReportHeadlineGroupModel,
+  TailBiteComplianceReport,
 } from '../models';
 
 export let BackendConfigurationPnComplianceReportMethods = {
@@ -33,6 +34,9 @@ export let BackendConfigurationPnComplianceReportMethods = {
   // current view as PDF or CSV and answers with the file bytes plus a
   // `Content-Disposition` carrying the file name.
   Export: 'api/backend-configuration-pn/compliance-report/export',
+  // The Halebid section of Rapport (#1517): the period's outbreaks on the
+  // properties where the caller is a tail-bite manager; a null model = no section.
+  TailBite: 'api/backend-configuration-pn/compliance-report/tail-bite',
 };
 
 /** What `export()` resolves to: the bytes and the server-chosen file name. */
@@ -164,6 +168,23 @@ export class BackendConfigurationPnComplianceReportService {
         model
       )
       .pipe(tap((res) => this.notifyError(res)));
+  }
+
+  /**
+   * The Halebid section of Rapport (#1517), for the same filter set as
+   * `eformColumns()`. A null model means the caller sees no Halebid section.
+   *
+   * `postNoToast` and NO `notifyError`, unlike its siblings: the section is an
+   * add-on to the report, so a failed fetch shows nothing and tells the user
+   * nothing — the eForm sections next to it are the report.
+   */
+  tailBite(
+    model: ComplianceReportRequestModel
+  ): Observable<OperationDataResult<TailBiteComplianceReport | null>> {
+    return this.apiBaseService.postNoToast<TailBiteComplianceReport | null>(
+      BackendConfigurationPnComplianceReportMethods.TailBite,
+      model
+    );
   }
 
   /**

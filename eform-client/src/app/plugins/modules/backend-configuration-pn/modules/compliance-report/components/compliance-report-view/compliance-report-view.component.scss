@@ -191,6 +191,20 @@
     max-width: 100%;
   }
 
+  // The Halebid section's host (#1517): ruled off like a report section. It
+  // holds only Angular's comment anchors (`:empty`) while it shows nothing —
+  // the caller sees no Halebid section, or its fetch failed — and then it
+  // takes no slot in this column's gap and draws no rule.
+  &__tail-bite {
+    display: block;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-primary);
+
+    &:empty {
+      display: none;
+    }
+  }
+
   // The per-table reveal. Right-aligned under the grid so it reads as a
   // footer of that table rather than as a heading of the next one.
   &__more {

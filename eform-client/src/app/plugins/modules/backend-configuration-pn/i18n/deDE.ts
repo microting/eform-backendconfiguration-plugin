@@ -1394,4 +1394,16 @@ export const deDE = {
   "Only an administrator can change a leader's login": "Nur ein Administrator kann das Login eines Leiters ändern",
   'Only administrators and leaders can do this': 'Nur Administratoren und Leiter können das tun',
   'The move changes who can read the documents. Only an administrator or a leader can do that.': 'Das Verschieben ändert, wer die Dokumente lesen kann. Nur ein Administrator oder ein Leiter kann das tun.',
+  // Halebid section of the compliance report's Rapport (#1517).
+  'Tail biting: outbreaks in the period': 'Schwanzbeißen: Ausbrüche im Zeitraum',
+  'No outbreaks in the period': 'Keine Ausbrüche im Zeitraum',
+  'Outbreaks in the period': 'Ausbrüche im Zeitraum',
+  'Closed in the period': 'Im Zeitraum abgeschlossen',
+  'Bitten pigs': 'Gebissene Schweine',
+  'of which {{n}} severe': 'davon {{n}} schwer',
+  'Actions done': 'Erledigte Aktionen',
+  '{{done}} of {{total}} done': '{{done}} von {{total}} erledigt',
+  'Risk assessed': 'Risiko bewertet',
+  'Yes factors': 'Ja-Faktoren',
+  'Not assessed': 'Nicht bewertet',
 };

@@ -159,6 +159,17 @@
       </div>
     </div>
   </section>
+
+  <!--
+    The Halebid section (#1517), after the eForm sections. It fetches on this
+    view's trigger but on its own, and renders nothing when the caller sees no
+    Halebid section or its fetch failed. The caption and heading are projected,
+    so they wear this view's section classes.
+  -->
+  <app-compliance-tail-bite-section class="compliance-report__tail-bite" [trigger]="fetchTrigger$">
+    <p class="compliance-report__tag">{{ 'Tail biting' | translate }}</p>
+    <h3 class="compliance-report__heading">{{ 'Tail biting: outbreaks in the period' | translate }}</h3>
+  </app-compliance-tail-bite-section>
 </div>
 
 <!--
