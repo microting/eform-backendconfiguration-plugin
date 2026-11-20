@@ -1109,25 +1109,40 @@ public partial class EventsGrpcService(
         };
 
         var result = await calendarService.GetTasksForWeek(model).ConfigureAwait(false);
-        var output = new List<Event>();
 
         if (!result.Success || result.Model == null)
         {
-            return output;
+            return [];
         }
 
-        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(result.Model)
+        return await BuildEventsFromCalendarRowsAsync(result.Model, ct, stampVersions).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The hydration half of <see cref="LoadEventsAsync"/> (envelope, fields,
+    /// completeness filter, attachments, due / version / etag) over calendar
+    /// rows already read. <c>GetEvent</c> calls it with the single row it
+    /// selected, so it hydrates nothing else.
+    /// </summary>
+    private async Task<List<Event>> BuildEventsFromCalendarRowsAsync(
+        IReadOnlyCollection<CalendarTaskResponseModel> rows,
+        CancellationToken ct,
+        bool stampVersions)
+    {
+        var output = new List<Event>();
+
+        var envelopeByTaskId = await LoadEnvelopeByTaskIdAsync(rows)
             .ConfigureAwait(false);
 
-        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(result.Model)
+        var fieldsByTaskId = await LoadFieldsByTaskIdAsync(rows)
             .ConfigureAwait(false);
 
         // Completeness filter: drop in-flight tasks whose eForm template
         // structure has not yet materialised. See ListEvents for rationale —
         // this is the stream-poll path, identical semantics required so the
         // client never sees a half-built event over either RPC.
-        var deliverable = new List<CalendarTaskResponseModel>(result.Model.Count);
-        foreach (var task in result.Model)
+        var deliverable = new List<CalendarTaskResponseModel>(rows.Count);
+        foreach (var task in rows)
         {
             if (task.EformId is > 0 && !fieldsByTaskId.ContainsKey(task.Id))
             {
@@ -1339,6 +1354,16 @@ public partial class EventsGrpcService(
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
         }
+        else if (NamesCaseOnly(request, requestId))
+        {
+            // contract_version 1: a request-id completion that names its SDK
+            // case acts on THAT case only (live, on this planning and the
+            // caller's site), never on another occurrence.
+            compliance = await FindComplianceForNamedCaseAsync(
+                    request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: true,
+                    sdkDbContextForCompliance, context.CancellationToken)
+                .ConfigureAwait(false);
+        }
         else
         {
             // Legacy fuzzy lookup — DO NOT remove. Older outbox payloads
@@ -1397,11 +1422,16 @@ public partial class EventsGrpcService(
             // WorkflowState filter. It still points at the winner's SDK case, which
             // is where the identity lives - Compliance itself has no completed-by or
             // completed-at column.
-            var settled = await dbContext.Compliances
-                .Where(x => x.Id == (int)request.ComplianceId)
-                .Where(x => x.PlanningId == arp.ItemPlanningId)
-                .FirstOrDefaultAsync()
-                .ConfigureAwait(false);
+            var settled = NamesCaseOnly(request, requestId)
+                ? await FindComplianceForNamedCaseAsync(
+                        request.MicrotingSdkCaseId, arp.ItemPlanningId, sdkSiteId, liveOnly: false,
+                        sdkDbContextForCompliance, context.CancellationToken)
+                    .ConfigureAwait(false)
+                : await dbContext.Compliances
+                    .Where(x => x.Id == (int)request.ComplianceId)
+                    .Where(x => x.PlanningId == arp.ItemPlanningId)
+                    .FirstOrDefaultAsync()
+                    .ConfigureAwait(false);
 
             // Arrived late: the winner had already committed before this
             // caller's lookup even ran. If the request carried answers, they

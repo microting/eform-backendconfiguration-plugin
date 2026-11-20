@@ -341,6 +341,14 @@ message Event {
   // contract_version 1. Stable hash of this Event's content excluding version
   // and etag: equal content gives an equal etag across calls and across
   // servers of the same version. Opaque; compare for equality only.
+  // Caveat: a ListEvents / ListTaskTracker / StreamEventChanges reply that
+  // holds SEVERAL occurrences of the same event id (a multi-day window) can
+  // give a later occurrence the comment and field values of an earlier one
+  // (a known server defect kept for installed apps); GetEvent and write
+  // replies always carry the occurrence's own content. For such occurrences
+  // the list etag differs from the GetEvent etag without any write, so do
+  // not compare a multi-day list etag with a GetEvent etag; compare GetEvent
+  // with GetEvent (or a write reply), or use a one-day list.
   string etag = 20;
   // contract_version 1. Calendar date (yyyy-MM-dd) of the backing
   // Compliance.Deadline, as stored (a date, no time zone). Empty when the

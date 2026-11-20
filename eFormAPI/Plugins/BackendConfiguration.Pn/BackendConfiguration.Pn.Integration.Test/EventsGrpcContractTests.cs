@@ -233,7 +233,8 @@ public class EventsGrpcContractTests : TestBaseSetup
         int TemplateId,
         int PictureFieldId,
         int TextFieldId,
-        DateTime Deadline)
+        DateTime Deadline,
+        IBackendConfigurationCalendarService Calendar)
     {
         public string EventId => ArpId.ToString(CultureInfo.InvariantCulture);
         public string DayKey => Deadline.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -542,7 +543,7 @@ public class EventsGrpcContractTests : TestBaseSetup
             site.Id, templateId,
             await FindFieldIdAsync(templateId, Constants.FieldTypes.Picture),
             await FindFieldIdAsync(templateId, Constants.FieldTypes.Text),
-            deadline);
+            deadline, calendar);
     }
 
     private static CompleteEventRequest LegacyComplete(Scenario s) => new()
@@ -1890,6 +1891,182 @@ public class EventsGrpcContractTests : TestBaseSetup
             await cts.CancelAsync();
             await streaming;
         }
+    }
+
+    // ---------------- PR #1516 review round 2 ----------------
+
+    private async Task<(Compliance Later, SdkCase LaterCase)> SeedLaterOccurrenceAsync(Scenario s)
+    {
+        var core = await GetCore();
+        var language = await MicrotingDbContext!.Languages.FirstAsync();
+        var laterCase = new SdkCase
+        {
+            SiteId = s.SiteId, CheckListId = s.TemplateId, Status = 66,
+            WorkflowState = Constants.WorkflowStates.Created, Custom = string.Empty
+        };
+        await MicrotingDbContext.Cases.AddAsync(laterCase);
+        await MicrotingDbContext.SaveChangesAsync();
+        await core.CaseRead(laterCase.Id, language);
+        var earliest = await BackendConfigurationPnDbContext!.Compliances.AsNoTracking()
+            .FirstAsync(x => x.Id == s.ComplianceId);
+        var later = new Compliance
+        {
+            PlanningId = s.PlanningId, PropertyId = s.PropertyId, AreaId = earliest.AreaId,
+            Deadline = s.Deadline.AddDays(7), StartDate = s.Deadline,
+            MicrotingSdkCaseId = laterCase.Id, MicrotingSdkeFormId = s.TemplateId,
+            Version = 1, WorkflowState = Constants.WorkflowStates.Created
+        };
+        await BackendConfigurationPnDbContext.Compliances.AddAsync(later);
+        await BackendConfigurationPnDbContext.SaveChangesAsync();
+        return (later, laterCase);
+    }
+
+    private Task<string> ComplianceStateAsync(int complianceId) =>
+        BackendConfigurationPnDbContext!.Compliances.AsNoTracking()
+            .Where(x => x.Id == complianceId).Select(x => x.WorkflowState ?? string.Empty).FirstAsync();
+
+    private Task<int> CaseStatusAsync(int caseId) =>
+        MicrotingDbContext!.Cases.AsNoTracking().Where(c => c.Id == caseId).Select(c => c.Status ?? 0).FirstAsync();
+
+    /// <summary>
+    /// Round 2, finding 1: a request-id completion with compliance_id = 0
+    /// that names SDK case B acts on B only, even when an older live
+    /// occurrence A of the same planning would win the legacy "earliest
+    /// live" lookup - on the first delivery and on the retry.
+    /// </summary>
+    [Test]
+    public async Task CompleteEvent_RequestIdNamingALaterCase_CompletesOnlyThatCase_FirstDeliveryAndRetry()
+    {
+        var s = await SeedAsync("named-later-case", withEchoTask: false);
+        var (later, laterCase) = await SeedLaterOccurrenceAsync(s);
+
+        var request = LegacyComplete(s);
+        request.RequestId = NewRequestId();
+        request.ComplianceId = 0;
+        request.MicrotingSdkCaseId = laterCase.Id;
+
+        var first = await s.Service.CompleteEvent(request, new TestServerCallContext());
+        var earliestAfterFirst = await ComplianceStateAsync(s.ComplianceId);
+        var retry = await s.Service.CompleteEvent(request, new TestServerCallContext());
+
+        var earliestAfterRetry = await ComplianceStateAsync(s.ComplianceId);
+        var laterAfter = await ComplianceStateAsync(later.Id);
+        var earliestCaseStatus = await CaseStatusAsync(s.SdkCaseId);
+        var laterCaseStatus = await CaseStatusAsync(laterCase.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(earliestAfterFirst, Is.EqualTo(Constants.WorkflowStates.Created),
+                "the first delivery did not complete the earliest occurrence");
+            Assert.That(earliestAfterRetry, Is.EqualTo(Constants.WorkflowStates.Created),
+                "the retry did not complete the earliest occurrence either");
+            Assert.That(earliestCaseStatus, Is.EqualTo(66), "the earliest case stays open");
+            Assert.That(laterAfter, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "the named occurrence was completed");
+            Assert.That(laterCaseStatus, Is.EqualTo(100));
+            Assert.That(first.Replayed, Is.False);
+            Assert.That(retry.Replayed, Is.True);
+        });
+    }
+
+    /// <summary>
+    /// Round 2, finding 1 (legacy pin): WITHOUT a request id the same
+    /// request keeps today's earliest-live-occurrence fallback.
+    /// </summary>
+    [Test]
+    public async Task Legacy_CompleteEvent_ComplianceIdZero_StillCompletesEarliestLiveOccurrence()
+    {
+        var s = await SeedAsync("legacy-earliest", withEchoTask: false);
+        var (later, laterCase) = await SeedLaterOccurrenceAsync(s);
+
+        var request = LegacyComplete(s);
+        request.ComplianceId = 0;
+        request.MicrotingSdkCaseId = laterCase.Id;
+        await s.Service.CompleteEvent(request, new TestServerCallContext());
+
+        var earliestAfter = await ComplianceStateAsync(s.ComplianceId);
+        var laterAfter = await ComplianceStateAsync(later.Id);
+        Assert.Multiple(() =>
+        {
+            Assert.That(earliestAfter, Is.EqualTo(Constants.WorkflowStates.Removed),
+                "legacy: the earliest live occurrence is completed, as today");
+            Assert.That(laterAfter, Is.EqualTo(Constants.WorkflowStates.Created));
+        });
+    }
+
+    /// <summary>
+    /// Round 2, finding 4: GetEvent selects the requested occurrence from
+    /// the calendar rows BEFORE hydrating, so unrelated tasks on the same
+    /// day are not hydrated (no envelope / SDK case read, no per-task
+    /// attachment query, no version stamp).
+    /// </summary>
+    [Test]
+    public async Task GetEvent_DoesNotHydrateUnrelatedTasksOfTheDay()
+    {
+        var s = await SeedAsync("get-filter-first");
+        var listed = await ListSingleAsync(s);
+        for (var i = 0; i < 5; i++)
+        {
+            s.Tasks.Add(new CalendarTaskResponseModel
+            {
+                Id = s.ArpId + 1_000_000 + i,
+                Title = $"unrelated-{i}",
+                TaskDate = s.DayKey,
+                Status = true,
+                PropertyId = s.PropertyId,
+                // Template-less rows are always deliverable, so hydrating
+                // them would cost one attachment query each.
+                EformId = null
+            });
+        }
+
+        var attachmentQueries = new CommandCounter("`AreaRulePlanningFiles`");
+        await using var bc = NewBackendContext(attachmentQueries);
+        await using var ip = NewItemsPlanningContext();
+        var service = s.ServiceOn(bc, ip);
+        var response = await service.GetEvent(new GetEventRequest
+        {
+            Key = new EventKey { EventId = s.EventId, PlanDayKey = s.DayKey, ComplianceId = s.ComplianceId }
+        }, new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(response.Found, Is.True);
+            Assert.That(response.Event, Is.EqualTo(listed), "same Event as the one-task list");
+            // One attachment read for the matched event + one batched version stamp.
+            Assert.That(attachmentQueries.Count, Is.EqualTo(2),
+                "attachment queries do not scale with the day's other tasks");
+        });
+    }
+
+    /// <summary>
+    /// Round 2, finding 5: a failed calendar read answers UNAVAILABLE from
+    /// GetEvent (retry), never found=false. ListEvents keeps today's empty
+    /// answer for the same failure.
+    /// </summary>
+    [Test]
+    public async Task GetEvent_FailedCalendarRead_IsUnavailable_ListEventsUnchanged()
+    {
+        var s = await SeedAsync("get-read-failure");
+        s.Calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>())
+            .Returns(_ => Task.FromResult(new OperationDataResult<List<CalendarTaskResponseModel>>(
+                false, "ErrorWhileGettingCalendarTasks: boom")));
+
+        var thrown = await Assert.ThrowsAsync<GrpcCore.RpcException>(() => s.Service.GetEvent(new GetEventRequest
+        {
+            Key = new EventKey { EventId = s.EventId, PlanDayKey = s.DayKey }
+        }, new TestServerCallContext()));
+        var listed = await s.Service.ListEvents(new ListEventsRequest
+        {
+            PropertyId = s.PropertyId.ToString(CultureInfo.InvariantCulture),
+            FromDateKey = s.DayKey,
+            ToDateKey = s.DayKey
+        }, new TestServerCallContext());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(thrown.StatusCode, Is.EqualTo(GrpcCore.StatusCode.Unavailable));
+            Assert.That(listed.Events, Is.Empty, "ListEvents: today's empty answer");
+        });
     }
 
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)

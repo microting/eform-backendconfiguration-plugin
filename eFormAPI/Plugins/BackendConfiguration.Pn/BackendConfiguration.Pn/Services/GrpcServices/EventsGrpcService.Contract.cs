@@ -57,6 +57,13 @@ public partial class EventsGrpcService
         "event_due_local"
     ];
 
+    /// <summary>
+    /// How far <see cref="GetEvent"/> widens its calendar window towards an
+    /// occurrence's original date; an occurrence moved further is looked up
+    /// on its day alone.
+    /// </summary>
+    private const int MaxGetEventWindowWideningDays = 92;
+
     /// <summary>Upper bound on a client request id; longer ids are rejected.</summary>
     internal const int MaxRequestIdLength = 128;
 
@@ -122,10 +129,21 @@ public partial class EventsGrpcService
 
     /// <summary>
     /// One occurrence, built by the same path as <c>ListEvents</c> /
-    /// <c>StreamEventChanges</c> (<see cref="LoadEventsAsync"/>: the
-    /// one-day calendar read scoped to the caller's site with
-    /// <c>ActionableOnly</c>, plus envelope, fields, attachments, due, version
-    /// and etag), so its etag equals the list's etag for unchanged content.
+    /// <c>StreamEventChanges</c>: the calendar read scoped to the caller's
+    /// site with <c>ActionableOnly</c>, then envelope, fields, attachments,
+    /// due, version and etag (<see cref="BuildEventsFromCalendarRowsAsync"/>).
+    /// <list type="bullet">
+    /// <item>The read window is the key's day widened to the occurrence's
+    /// ORIGINAL date (its compliance deadline, or the original date of a
+    /// <c>scope=this</c> move onto the day), so an occurrence moved between
+    /// days is found exactly as a list spanning both days shows it.</item>
+    /// <item>Rows are selected by the key BEFORE hydration, and each candidate
+    /// is hydrated on its own: nothing else on the day is read, and the
+    /// occurrence gets its OWN case's comment and fields (a multi-row
+    /// hydration groups by event id, see <c>LoadEnvelopeByTaskIdAsync</c>).</item>
+    /// <item>A failed calendar read is <c>UNAVAILABLE</c> (retry), never
+    /// <c>found=false</c>; lists and the stream keep their empty answer.</item>
+    /// </list>
     /// Unknown, removed, other-property and not-assigned-to-caller tasks all
     /// answer <c>found=false</c>. Read-only: unlike ListEvents it does not
     /// run the eager deploy.
@@ -155,7 +173,7 @@ public partial class EventsGrpcService
             .AsNoTracking()
             .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
             .Where(x => x.Id == eventId)
-            .Select(x => new { x.PropertyId })
+            .Select(x => new { x.PropertyId, x.ItemPlanningId })
             .FirstOrDefaultAsync(context.CancellationToken)
             .ConfigureAwait(false);
         if (arp == null)
@@ -170,15 +188,100 @@ public partial class EventsGrpcService
             return notFound;
         }
 
-        var events = await LoadEventsAsync(arp.PropertyId, [], day, day, sdkSiteId, context.CancellationToken)
+        var (windowStart, windowEnd) = await ResolveGetEventWindowAsync(
+                eventId, arp.ItemPlanningId, day, key, context.CancellationToken)
             .ConfigureAwait(false);
-        var wantedId = eventId.ToString(CultureInfo.InvariantCulture);
-        var match = events.FirstOrDefault(e =>
-            e.Id == wantedId
-            && e.PlanDayKey == key.PlanDayKey
-            && (!key.HasComplianceId || e.ComplianceId == key.ComplianceId));
 
-        return match == null ? notFound : new GetEventResponse { Event = match, Found = true };
+        var result = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
+        {
+            PropertyId = arp.PropertyId,
+            WeekStart = windowStart.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            WeekEnd = windowEnd.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            BoardIds = [],
+            TagNames = [],
+            // #931: only events assigned to the caller's own site.
+            SiteIds = [sdkSiteId],
+            ActionableOnly = true,
+            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId).ConfigureAwait(false)
+        }).ConfigureAwait(false);
+
+        if (!result.Success || result.Model == null)
+        {
+            // The calendar service turns read exceptions into a failed
+            // result. UNAVAILABLE (as ChemicalsGrpcService uses for a failing
+            // dependency): GetEvent is a read, so a retry is always safe,
+            // and the client must not conclude that the task is gone.
+            logger.LogWarning(
+                "EventsGrpcService.GetEvent: calendar read failed for event {EventId} on {PlanDayKey}: {Message}",
+                eventId, key.PlanDayKey, result.Message);
+            throw new RpcException(new Status(StatusCode.Unavailable,
+                "The event could not be read right now; retry."));
+        }
+
+        var candidates = result.Model
+            .Where(t => t.Id == eventId
+                        && t.TaskDate == key.PlanDayKey
+                        && (!key.HasComplianceId || (t.ComplianceId ?? 0) == key.ComplianceId))
+            .ToList();
+        foreach (var candidate in candidates)
+        {
+            var built = await BuildEventsFromCalendarRowsAsync([candidate], context.CancellationToken,
+                    stampVersions: true)
+                .ConfigureAwait(false);
+            if (built.Count > 0)
+            {
+                return new GetEventResponse { Event = built[0], Found = true };
+            }
+        }
+
+        return notFound;
+    }
+
+    /// <summary>
+    /// The calendar window <see cref="GetEvent"/> reads: the key's day,
+    /// widened to the occurrence's original date. The calendar places a
+    /// compliance-backed occurrence by its <c>Deadline</c> and applies a
+    /// <c>scope=this</c> move only when that original date is inside the
+    /// window; a window holding just the new day renders the moved row
+    /// without its case, and the completeness filter drops it. Sources: the
+    /// key's compliance (any state, on this planning) and the move
+    /// exceptions of this event onto the key's day.
+    /// </summary>
+    private async Task<(DateTime Start, DateTime End)> ResolveGetEventWindowAsync(
+        int eventId, int itemPlanningId, DateTime day, EventKey key, CancellationToken ct)
+    {
+        var dates = new List<DateTime> { day.Date };
+
+        if (key.HasComplianceId && key.ComplianceId > 0)
+        {
+            var complianceId = (int)key.ComplianceId;
+            var deadline = await dbContext.Compliances
+                .AsNoTracking()
+                .Where(x => x.Id == complianceId && x.PlanningId == itemPlanningId)
+                .Select(x => (DateTime?)x.Deadline)
+                .FirstOrDefaultAsync(ct)
+                .ConfigureAwait(false);
+            if (deadline is { } d && d != default)
+            {
+                dates.Add(d.Date);
+            }
+        }
+
+        var nextDay = day.Date.AddDays(1);
+        var movedFrom = await dbContext.CalendarOccurrenceExceptions
+            .AsNoTracking()
+            .Where(x => x.AreaRulePlanningId == eventId)
+            .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed)
+            .Where(x => !x.IsDeleted)
+            .Where(x => x.NewDate.HasValue && x.NewDate.Value >= day.Date && x.NewDate.Value < nextDay)
+            .Select(x => x.OriginalDate)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        dates.AddRange(movedFrom.Select(x => x.Date));
+
+        // Bound the read: a key can name any compliance of the planning.
+        var reachable = dates.Where(d => Math.Abs((d - day.Date).TotalDays) <= MaxGetEventWindowWideningDays).ToList();
+        return (reachable.Min(), reachable.Max());
     }
 
     // ------------------------------------------------------------------
@@ -377,6 +480,54 @@ public partial class EventsGrpcService
                         || (caseId > 0 && x.MicrotingSdkCaseId == caseId))
             .ToListAsync(ct)
             .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A request-id completion that names its SDK case but no compliance id.
+    /// Such a request acts on that case only; without a request id (or
+    /// naming neither id) the legacy "earliest live occurrence" lookup stays.
+    /// </summary>
+    private static bool NamesCaseOnly(CompleteEventRequest request, string requestId) =>
+        requestId.Length > 0 && request.ComplianceId <= 0 && request.MicrotingSdkCaseId > 0;
+
+    /// <summary>
+    /// The compliance of <paramref name="itemPlanningId"/> backed by SDK case
+    /// <paramref name="requestedCaseId"/>, provided that case is homed on the
+    /// caller's site; null otherwise. <paramref name="liveOnly"/>: only a
+    /// non-removed row (the occurrence to complete); otherwise any state,
+    /// newest first (the "already completed" lookup).
+    /// </summary>
+    private async Task<Compliance?> FindComplianceForNamedCaseAsync(
+        long requestedCaseId,
+        int itemPlanningId,
+        int sdkSiteId,
+        bool liveOnly,
+        MicrotingDbContext sdkDbContext,
+        CancellationToken ct)
+    {
+        var caseId = (int)requestedCaseId;
+        var onCallersSite = await sdkDbContext.Cases
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == caseId && c.SiteId == sdkSiteId, ct)
+            .ConfigureAwait(false);
+        if (!onCallersSite)
+        {
+            return null;
+        }
+
+        var query = dbContext.Compliances
+            .Where(x => x.PlanningId == itemPlanningId)
+            .Where(x => x.MicrotingSdkCaseId == caseId);
+        return liveOnly
+            ? await query
+                .Where(x => x.WorkflowState != Constants.WorkflowStates.Removed || x.WorkflowState == null)
+                .OrderBy(x => x.Deadline)
+                .FirstOrDefaultAsync(ct)
+                .ConfigureAwait(false)
+            : await query
+                .OrderByDescending(x => x.Id)
+                .FirstOrDefaultAsync(ct)
+                .ConfigureAwait(false);
     }
 
     /// <summary>
