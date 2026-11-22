@@ -33,11 +33,17 @@ public class LiveNotifierTests
     private LiveConnectionRegistry _registry = null!;
     private IHubContext<BackendConfigurationHub> _hub = null!;
     private IHubClients _clients = null!;
-    private IClientProxy _proxy = null!;
-    private IClientProxy _single = null!;
-    private IGroupManager _groups = null!;
+    private IClientProxy _groupBroadcast = null!;
     private LiveNotifier _notifier = null!;
     private readonly List<string> _aborted = [];
+    private readonly List<Sent> _sent = [];
+    private Exception? _sendFailure;
+
+    /// <summary>When set, a <c>Refused</c> send (the end of a connection) waits for it: a paused tear-down.</summary>
+    private TaskCompletionSource? _refusedGate;
+
+    /// <summary>One send through <c>Clients.Clients(ids)</c>: who, what, and the single payload.</summary>
+    private sealed record Sent(IReadOnlyList<string> Ids, string Method, object? Payload);
 
     [SetUp]
     public void SetUp()
@@ -46,15 +52,30 @@ public class LiveNotifierTests
         _registry = new LiveConnectionRegistry(_clock);
         _hub = Substitute.For<IHubContext<BackendConfigurationHub>>();
         _clients = Substitute.For<IHubClients>();
-        _proxy = Substitute.For<IClientProxy>();
-        _single = Substitute.For<IClientProxy>();
-        _groups = Substitute.For<IGroupManager>();
+        _groupBroadcast = Substitute.For<IClientProxy>();
         _hub.Clients.Returns(_clients);
-        _hub.Groups.Returns(_groups);
-        _clients.Group(Arg.Any<string>()).Returns(_proxy);
-        _clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(_single);
+        _clients.Group(Arg.Any<string>()).Returns(_groupBroadcast);
+        _clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(ci => Recorder(ci.Arg<IReadOnlyList<string>>().ToList()));
         _aborted.Clear();
+        _sent.Clear();
+        _sendFailure = null;
+        _refusedGate = null;
         _notifier = new LiveNotifier(_hub, _registry, NullLogger<LiveNotifier>.Instance);
+    }
+
+    private IClientProxy Recorder(IReadOnlyList<string> ids)
+    {
+        var proxy = Substitute.For<IClientProxy>();
+        proxy.SendCoreAsync(Arg.Any<string>(), Arg.Any<object?[]>(), Arg.Any<CancellationToken>()).Returns(ci =>
+        {
+            if (_sendFailure is not null) throw _sendFailure;
+            var method = ci.ArgAt<string>(0);
+            lock (_sent) _sent.Add(new Sent(ids, method, ci.ArgAt<object?[]>(1).Single()));
+            return method == LiveHubContract.ServerMethods.Refused && _refusedGate is not null
+                ? _refusedGate.Task
+                : Task.CompletedTask;
+        });
+        return proxy;
     }
 
     private void Member(string connectionId, int siteId, string group, DateTimeOffset? expiresAt = null, int? userId = null)
@@ -69,27 +90,28 @@ public class LiveNotifierTests
     private static string Json(object? payload) =>
         JsonSerializer.Serialize(payload, payload!.GetType(), new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
-    private static object? SentPayload(IClientProxy proxy, string method)
+    private List<Sent> SentOf(string method)
     {
-        var call = proxy.ReceivedCalls().Single();
-        Assert.That(call.GetArguments()[0], Is.EqualTo(method));
-        var args = (object?[])call.GetArguments()[1]!;
-        Assert.That(args, Has.Length.EqualTo(1));
-        return args[0];
+        lock (_sent) return _sent.Where(x => x.Method == method).ToList();
     }
 
+    /// <summary>Every connection id a hint of <paramref name="method"/> was sent to.</summary>
+    private List<string> RecipientsOf(string method) => SentOf(method).SelectMany(x => x.Ids).ToList();
+
     [Test]
-    public async Task TaskChanged_FullKey_GoesToThePropertyGroupOnly_WithTheDocumentedPayload()
+    public async Task TaskChanged_FullKey_GoesToThePropertyGroupsMembersOnly_WithTheDocumentedPayload()
     {
         Member("c1", 11, LiveHubContract.PropertyGroup(42));
         Member("c2", 12, LiveHubContract.PropertyGroup(43));
 
         await _notifier.TaskChangedAsync(42, eventId: 7, planDay: new DateOnly(2026, 11, 21), complianceId: 900);
 
-        _clients.Received(1).Group(LiveHubContract.PropertyGroup(42));
-        _clients.ReceivedWithAnyArgs(1).Group(default!);
-        Assert.That(Json(SentPayload(_proxy, LiveHubContract.ServerMethods.TaskChanged)), Is.EqualTo(
+        var sent = SentOf(LiveHubContract.ServerMethods.TaskChanged);
+        Assert.That(sent, Has.Count.EqualTo(1));
+        Assert.That(sent[0].Ids, Is.EqualTo(new[] { "c1" }));
+        Assert.That(Json(sent[0].Payload), Is.EqualTo(
             """{"v":1,"property_id":"42","event_id":"7","plan_day_key":"2026-11-21","compliance_id":900,"kind":"changed"}"""));
+        Assert.That(_groupBroadcast.ReceivedCalls(), Is.Empty, "hints go to the registry's members, never a group broadcast");
     }
 
     [Test]
@@ -99,20 +121,21 @@ public class LiveNotifierTests
 
         await _notifier.TaskChangedAsync(42, kind: TaskChangeKinds.Property);
 
-        Assert.That(Json(SentPayload(_proxy, LiveHubContract.ServerMethods.TaskChanged)),
+        Assert.That(Json(SentOf(LiveHubContract.ServerMethods.TaskChanged).Single().Payload),
             Is.EqualTo("""{"v":1,"property_id":"42","kind":"property"}"""));
     }
 
     [Test]
-    public async Task AssignmentsChanged_GoesToTheSiteGroupOnly()
+    public async Task AssignmentsChanged_GoesToTheSiteGroupsMembersOnly()
     {
         Member("c1", 11, LiveHubContract.SiteGroup(11));
+        Member("c2", 12, LiveHubContract.SiteGroup(12));
 
         await _notifier.AssignmentsChangedAsync(11);
 
-        _clients.Received(1).Group(LiveHubContract.SiteGroup(11));
-        _clients.ReceivedWithAnyArgs(1).Group(default!);
-        Assert.That(Json(SentPayload(_proxy, LiveHubContract.ServerMethods.AssignmentsChanged)), Is.EqualTo("""{"v":1}"""));
+        var sent = SentOf(LiveHubContract.ServerMethods.AssignmentsChanged).Single();
+        Assert.That(sent.Ids, Is.EqualTo(new[] { "c1" }));
+        Assert.That(Json(sent.Payload), Is.EqualTo("""{"v":1}"""));
     }
 
     [Test]
@@ -123,7 +146,8 @@ public class LiveNotifierTests
         await _notifier.TaskChangedAsync(42);
         await _notifier.AssignmentsChangedAsync(11);
 
-        Assert.That(_proxy.ReceivedCalls(), Is.Empty);
+        Assert.That(_sent, Is.Empty);
+        Assert.That(_groupBroadcast.ReceivedCalls(), Is.Empty);
     }
 
     [Test]
@@ -142,12 +166,53 @@ public class LiveNotifierTests
             Assert.That(_registry.SiteOf("expired"), Is.Null);
             Assert.That(_registry.SiteOf("valid"), Is.EqualTo(12));
         });
-        await _groups.Received(1).RemoveFromGroupAsync("expired", LiveHubContract.PropertyGroup(42), Arg.Any<CancellationToken>());
-        await _groups.Received(1).RemoveFromGroupAsync("expired", LiveHubContract.SiteGroup(11), Arg.Any<CancellationToken>());
-        _clients.Received(1).Clients(Arg.Is<IReadOnlyList<string>>(ids => ids.Single() == "expired"));
-        Assert.That(Json(SentPayload(_single, LiveHubContract.ServerMethods.Refused)),
-            Is.EqualTo("""{"v":1,"code":"not_authenticated"}"""));
-        Assert.That(SentPayload(_proxy, LiveHubContract.ServerMethods.TaskChanged), Is.Not.Null, "the valid member still gets the hint");
+        var refused = SentOf(LiveHubContract.ServerMethods.Refused).Single();
+        Assert.That(refused.Ids, Is.EqualTo(new[] { "expired" }));
+        Assert.That(Json(refused.Payload), Is.EqualTo("""{"v":1,"code":"not_authenticated"}"""));
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.TaskChanged), Is.EqualTo(new[] { "valid" }));
+    }
+
+    /// <summary>
+    /// PR #1523 review: publish A takes the expired connection out of the
+    /// registry and is still ending it (its Refused send is paused) when
+    /// publish B runs. B must not reach the expired connection.
+    /// </summary>
+    [Test]
+    public async Task APublishDuringAnotherPublishsCleanUp_DoesNotReachTheExpiredConnection()
+    {
+        Member("expired", 11, LiveHubContract.PropertyGroup(42), expiresAt: Now.AddMinutes(30));
+        Member("valid", 12, LiveHubContract.PropertyGroup(42), expiresAt: Now.AddHours(2));
+        _clock.UtcNow = Now.AddMinutes(30);
+        var cleanUp = new TaskCompletionSource();
+        _refusedGate = cleanUp;
+
+        var publishA = _notifier.TaskChangedAsync(42, eventId: 1);
+        Assert.That(publishA.IsCompleted, Is.False, "A is paused while ending the expired connection");
+        await _notifier.TaskChangedAsync(42, eventId: 2);
+
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.TaskChanged), Is.EqualTo(new[] { "valid" }));
+        cleanUp.SetResult();
+        await publishA;
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.TaskChanged), Is.EqualTo(new[] { "valid", "valid" }));
+        Assert.That(_groupBroadcast.ReceivedCalls(), Is.Empty);
+    }
+
+    /// <summary>The same window for a site revoke: a publish while it is still ending the connection does not reach it.</summary>
+    [Test]
+    public async Task APublishDuringASiteRevokesCleanUp_DoesNotReachTheRevokedConnection()
+    {
+        Member("revoked", 11, LiveHubContract.PropertyGroup(42));
+        Member("valid", 12, LiveHubContract.PropertyGroup(42));
+        var cleanUp = new TaskCompletionSource();
+        _refusedGate = cleanUp;
+
+        var revoke = _notifier.RevokeSiteAsync(11);
+        Assert.That(revoke.IsCompleted, Is.False, "the revoke is paused while ending the connection");
+        await _notifier.TaskChangedAsync(42);
+
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.TaskChanged), Is.EqualTo(new[] { "valid" }));
+        cleanUp.SetResult();
+        await revoke;
     }
 
     [Test]
@@ -166,12 +231,13 @@ public class LiveNotifierTests
             Assert.That(_registry.ConnectionsOf(5), Is.Zero);
             Assert.That(_registry.IsIn("other", LiveHubContract.PropertyGroup(42)), Is.True);
         });
-        await _groups.Received(1).RemoveFromGroupAsync("a", LiveHubContract.SiteGroup(11), Arg.Any<CancellationToken>());
-        await _groups.Received(1).RemoveFromGroupAsync("a", LiveHubContract.PropertyGroup(42), Arg.Any<CancellationToken>());
-        await _groups.Received(1).RemoveFromGroupAsync("b", LiveHubContract.PropertyGroup(43), Arg.Any<CancellationToken>());
-        await _groups.ReceivedWithAnyArgs(3).RemoveFromGroupAsync(default!, default!);
-        Assert.That(_single.ReceivedCalls().Select(c => Json(((object?[])c.GetArguments()[1]!)[0])),
+        Assert.That(SentOf(LiveHubContract.ServerMethods.Refused).Select(x => Json(x.Payload)),
             Is.All.EqualTo("""{"v":1,"code":"revoked"}"""));
+
+        await _notifier.TaskChangedAsync(42);
+        await _notifier.AssignmentsChangedAsync(11);
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.TaskChanged), Is.EqualTo(new[] { "other" }));
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.AssignmentsChanged), Is.Empty);
     }
 
     [Test]
@@ -180,20 +246,18 @@ public class LiveNotifierTests
         Member("c1", 11, LiveHubContract.PropertyGroup(42));
         _registry.Joined("c1", LiveHubContract.SiteGroup(11));
         Member("c2", 13, LiveHubContract.SiteGroup(13));
-        _proxy.SendCoreAsync(default!, default!, default).ThrowsAsyncForAnyArgs(new InvalidOperationException("send"));
-        _single.SendCoreAsync(default!, default!, default).ThrowsAsyncForAnyArgs(new InvalidOperationException("single"));
-        _groups.RemoveFromGroupAsync(default!, default!, default).ThrowsForAnyArgs(new InvalidOperationException("sync"));
+        _sendFailure = new InvalidOperationException("send");
         var logger = Substitute.For<ILogger<LiveNotifier>>();
         var notifier = new LiveNotifier(_hub, _registry, logger);
 
         await Assert.DoesNotThrowAsync(() => notifier.TaskChangedAsync(42, eventId: 7));
         await Assert.DoesNotThrowAsync(() => notifier.AssignmentsChangedAsync(11));
-        await Assert.DoesNotThrowAsync(() => notifier.RevokePropertyAccessAsync(11, 42));
         await Assert.DoesNotThrowAsync(() => notifier.RevokeSiteAsync(13));
-        Assert.That(_aborted, Is.EqualTo(new[] { "c2" }), "a connection is aborted even when its group removal fails");
+        Assert.That(_aborted, Is.EqualTo(new[] { "c2" }), "a connection is aborted even when its Refused send fails");
 
-        _clients.Group(Arg.Any<string>()).Throws(new InvalidOperationException("clients"));
+        _clients.Clients(Arg.Any<IReadOnlyList<string>>()).Throws(new InvalidOperationException("clients"));
         await Assert.DoesNotThrowAsync(() => notifier.AssignmentsChangedAsync(11));
+        await Assert.DoesNotThrowAsync(() => notifier.RevokePropertyAccessAsync(11, 42));
         Assert.That(logger.ReceivedCalls().Count(c => c.GetMethodInfo().Name == nameof(ILogger.Log)), Is.GreaterThanOrEqualTo(5));
     }
 
@@ -206,16 +270,18 @@ public class LiveNotifierTests
 
         await _notifier.RevokePropertyAccessAsync(11, 42);
 
-        await _groups.Received(1).RemoveFromGroupAsync("mine", LiveHubContract.PropertyGroup(42), Arg.Any<CancellationToken>());
-        await _groups.ReceivedWithAnyArgs(1).RemoveFromGroupAsync(default!, default!);
         Assert.Multiple(() =>
         {
             Assert.That(_registry.IsIn("mine", LiveHubContract.PropertyGroup(42)), Is.False);
             Assert.That(_registry.IsIn("mine", LiveHubContract.PropertyGroup(43)), Is.True);
             Assert.That(_registry.IsIn("other", LiveHubContract.PropertyGroup(42)), Is.True);
             Assert.That(_registry.RevocationCount(11, 42), Is.EqualTo(1));
-            Assert.That(_aborted, Is.Empty);
+            Assert.That(_aborted, Is.Empty, "a property revoke does not end the connection");
         });
+
+        await _notifier.TaskChangedAsync(42);
+        await _notifier.TaskChangedAsync(43);
+        Assert.That(RecipientsOf(LiveHubContract.ServerMethods.TaskChanged), Is.EqualTo(new[] { "other", "mine" }));
     }
 
     [Test]

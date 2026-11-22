@@ -7,8 +7,10 @@ namespace BackendConfiguration.Pn.Hubs;
 
 /// <summary>
 /// The live connections: for each one its user, SDK site, token expiry, a
-/// way to abort it, and the groups it joined. SignalR checks access only when
-/// a group is joined, so everything that takes access away goes through here:
+/// way to abort it, and the groups it joined. This is the only record of group
+/// membership (the hub uses no SignalR groups; hints go to the ids listed
+/// here), and access is checked only when a group is joined, so everything
+/// that takes access away goes through here:
 /// <list type="bullet">
 /// <item>a removed property assignment (<see cref="Revoke"/>) takes the
 /// site's connections out of that property's group;</item>
@@ -37,8 +39,8 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
         public HashSet<string> Groups { get; } = [];
     }
 
-    /// <summary>A connection taken out of the registry: abort it and remove it from these SignalR groups.</summary>
-    public sealed record Taken(string ConnectionId, Action Abort, IReadOnlyList<string> Groups);
+    /// <summary>A connection taken out of the registry (it receives nothing from now on); the caller ends it.</summary>
+    public sealed record Taken(string ConnectionId, Action Abort);
 
     /// <summary>The registry's clock; the hub's expiry checks use the same one.</summary>
     public DateTimeOffset UtcNow => timeProvider.GetUtcNow();
@@ -113,11 +115,19 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
                 : 0;
     }
 
-    /// <summary>True when at least one live connection joined the group.</summary>
-    public bool HasMembers(string group)
+    /// <summary>
+    /// The connections a hint to <paramref name="group"/> goes to: the ones
+    /// this registry lists as members whose token is still valid. Group
+    /// membership lives only here (no SignalR groups), so a connection taken
+    /// out (expired, revoked) receives nothing. Bounded by the group's member
+    /// count.
+    /// </summary>
+    public IReadOnlyList<string> EligibleMembers(string group)
     {
+        var now = UtcNow;
         lock (_gate)
-            return _connections.Values.Any(c => c.Groups.Contains(group));
+            return _connections.Where(kv => kv.Value.ExpiresAt > now && kv.Value.Groups.Contains(group))
+                .Select(kv => kv.Key).ToList();
     }
 
     /// <summary>
@@ -134,8 +144,8 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
 
     /// <summary>
     /// Marks the site's access to the property as revoked and takes, atomically,
-    /// every connection of the site that joined <paramref name="group"/>; the
-    /// caller removes them from SignalR's group.
+    /// every connection of the site out of <paramref name="group"/>; returns
+    /// their ids. The connections stay open (they keep their other groups).
     /// </summary>
     public IReadOnlyList<string> Revoke(int sdkSiteId, int propertyId, string group)
     {
@@ -169,7 +179,7 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
             foreach (var (id, c) in _connections.Where(kv => match(kv.Value)).ToList())
             {
                 _connections.Remove(id);
-                taken.Add(new Taken(id, c.Abort, c.Groups.ToList()));
+                taken.Add(new Taken(id, c.Abort));
             }
         }
         return taken;

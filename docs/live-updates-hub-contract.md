@@ -168,7 +168,7 @@ Installed apps ignore all of this. The 5-second `StreamEventChanges` is unchange
   - The same instant is used at connect, on `JoinProperty` and in the publish sweep, so the hub
     accepts a token exactly as long as gRPC and REST do.
   - An expired connection gets no further hints. Every publish first ends the expired
-    connections (removed from their groups, `Refused not_authenticated`, closed).
+    connections (taken out of every group, `Refused not_authenticated`, closed).
   - `JoinProperty` refuses and closes an expired connection too.
   - An idle connection that receives nothing may stay open past its expiry until one of these
     happens, but it receives nothing.
@@ -182,12 +182,21 @@ Installed apps ignore all of this. The 5-second `StreamEventChanges` is unchange
 `ILiveNotifier` is a singleton in DI. It never throws, and it does nothing when no connection
 joined the target group.
 
+**Who receives a hint.** Group membership lives in one place: the in-memory connection registry.
+The hub does not use SignalR groups.
+- A hint is sent to the connection ids the registry lists as members of the group with a token
+  that is still valid (`Clients.Clients(ids)`, read atomically).
+- A connection the registry has taken out of a group (token expired, site revoked, property
+  access revoked) therefore receives nothing from that moment on, including from a publish that
+  runs while another call is still ending the connection.
+- The cost is bounded by the group's member count.
+
 - `TaskChangedAsync(propertyId, eventId?, planDay?, complianceId?, kind)`
 - `AssignmentsChangedAsync(sdkSiteId)`
 - `RevokePropertyAccessAsync(sdkSiteId, propertyId)`: takes the site's connections out of the
   property group.
-- `RevokeSiteAsync(sdkSiteId)`: ends every connection of the site (groups, `Refused revoked`,
-  close).
+- `RevokeSiteAsync(sdkSiteId)`: ends every connection of the site (taken out of every group,
+  `Refused revoked`, close).
 
 Call them after the change has been committed.
 

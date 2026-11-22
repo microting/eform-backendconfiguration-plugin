@@ -47,9 +47,17 @@ public class LiveHubTests : TestBaseSetup
     private LiveConnectionRegistry _registry = null!;
     private IClientProxy _caller = null!;
     private FakeCallerContext _context = null!;
+    private readonly List<IGroupManager> _groupManagers = [];
     private IUserService _users = null!;
     private IGrpcSiteResolver _sites = null!;
     private int _siteOfUser;
+
+    [TearDown]
+    public void NoSignalRGroupsAreUsed()
+    {
+        Assert.That(_groupManagers.SelectMany(g => g.ReceivedCalls()), Is.Empty);
+        _groupManagers.Clear();
+    }
 
     [SetUp]
     public void HubSetup()
@@ -77,7 +85,9 @@ public class LiveHubTests : TestBaseSetup
     {
         var http = StartedHubRequest();
         if (queryToken is not null) http.Request.QueryString = new QueryString("?access_token=" + queryToken);
+        // The hub keeps group membership in the registry only; it must never touch SignalR's groups.
         var groups = Substitute.For<IGroupManager>();
+        _groupManagers.Add(groups);
         var clients = Substitute.For<IHubCallerClients>();
         _caller = Substitute.For<IClientProxy>();
         ((IHubCallerClients<IClientProxy>)clients).Caller.Returns(_caller);
@@ -156,10 +166,10 @@ public class LiveHubTests : TestBaseSetup
     [TestCase("expired-token")]
     public async Task Connect_WithoutAValidToken_IsRefused_AndJoinsNothing(string token)
     {
-        var (hub, groups) = Hub(queryToken: token);
+        var (hub, _) = Hub(queryToken: token);
 
         await AssertConnectRefusedAsync(hub, LiveHubContract.Errors.NotAuthenticated);
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups(_context.ConnectionId, LiveHubContract.PropertyGroupPrefix), Is.Zero);
         await _users.DidNotReceiveWithAnyArgs().GetByIdAsync(default);
     }
 
@@ -171,10 +181,10 @@ public class LiveHubTests : TestBaseSetup
     public async Task Connect_ExpiredButCorrectlySignedToken_IsRefusedPastTheClockSkew()
     {
         _clock.SetUtcNow(GoodTokenExpiry + TestSkew);
-        var (hub, groups) = Hub(queryToken: "good-token");
+        var (hub, _) = Hub(queryToken: "good-token");
 
         await AssertConnectRefusedAsync(hub, LiveHubContract.Errors.NotAuthenticated);
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups(_context.ConnectionId, LiveHubContract.PropertyGroupPrefix), Is.Zero);
     }
 
     /// <summary>
@@ -185,12 +195,12 @@ public class LiveHubTests : TestBaseSetup
     public async Task Connect_TokenExpiredWithinTheClockSkew_IsAccepted()
     {
         _clock.SetUtcNow(GoodTokenExpiry + TestSkew - TimeSpan.FromSeconds(1));
-        var (hub, groups) = Hub(queryToken: "good-token");
+        var (hub, _) = Hub(queryToken: "good-token");
 
         await hub.OnConnectedAsync();
 
         Assert.That(_context.Aborted, Is.False);
-        await groups.Received(1).AddToGroupAsync("c1", LiveHubContract.SiteGroup(WorkerSite), Arg.Any<CancellationToken>());
+        Assert.That(_registry.IsIn("c1", LiveHubContract.SiteGroup(WorkerSite)), Is.True);
     }
 
     /// <summary>The publish sweep ends a connection at the same instant: expiry plus ClockSkew.</summary>
@@ -219,9 +229,9 @@ public class LiveHubTests : TestBaseSetup
         Assert.That(_registry.ConnectionsOf(UserId), Is.EqualTo(LiveHubLimits.MaxConnectionsPerUser));
 
         await Hub(connectionId: "c0").Hub.OnDisconnectedAsync(null);
-        var (again, groups) = Hub(connectionId: "again");
+        var (again, _) = Hub(connectionId: "again");
         await again.OnConnectedAsync();
-        await groups.Received(1).AddToGroupAsync("again", LiveHubContract.SiteGroup(WorkerSite), Arg.Any<CancellationToken>());
+        Assert.That(_registry.IsIn("again", LiveHubContract.SiteGroup(WorkerSite)), Is.True);
         Assert.That(_context.Aborted, Is.False);
     }
 
@@ -240,22 +250,22 @@ public class LiveHubTests : TestBaseSetup
     {
         _sites.GetSdkSiteIdForUserAsync(Arg.Any<EformUser>())
             .ThrowsAsync(new RpcException(new Status(StatusCode.Unauthenticated, GrpcSiteResolver.AccountDisabledDetail)));
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
 
         await AssertConnectRefusedAsync(hub, LiveHubContract.Errors.AccountDisabled);
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups(_context.ConnectionId, LiveHubContract.PropertyGroupPrefix), Is.Zero);
         Assert.That(_registry.ConnectionsOf(UserId), Is.Zero);
     }
 
     [Test]
     public async Task Connect_AuthenticatedWorker_IsAutoJoinedToItsOwnSiteGroupOnly()
     {
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
 
         await hub.OnConnectedAsync();
 
-        await groups.Received(1).AddToGroupAsync("c1", LiveHubContract.SiteGroup(WorkerSite), Arg.Any<CancellationToken>());
-        await groups.ReceivedWithAnyArgs(1).AddToGroupAsync(default!, default!);
+        Assert.That(_registry.IsIn("c1", LiveHubContract.SiteGroup(WorkerSite)), Is.True);
+        Assert.That(_registry.CountGroups("c1", ""), Is.EqualTo(1));
         await _users.Received(1).GetByIdAsync(UserId);
         Assert.That(_registry.SiteOf("c1"), Is.EqualTo(WorkerSite));
         Assert.That(_caller.ReceivedCalls(), Is.Empty);
@@ -267,11 +277,11 @@ public class LiveHubTests : TestBaseSetup
     {
         var user = new ClaimsPrincipal(new ClaimsIdentity(
             [new Claim(ClaimTypes.NameIdentifier, "5"), new Claim("updated_at", "638000000000000000"), Exp(GoodTokenExpiry)], "Bearer"));
-        var (hub, groups) = Hub(queryToken: null, headerUser: user);
+        var (hub, _) = Hub(queryToken: null, headerUser: user);
 
         await hub.OnConnectedAsync();
 
-        await groups.Received(1).AddToGroupAsync("c1", LiveHubContract.SiteGroup(WorkerSite), Arg.Any<CancellationToken>());
+        Assert.That(_registry.IsIn("c1", LiveHubContract.SiteGroup(WorkerSite)), Is.True);
     }
 
     [Test]
@@ -280,13 +290,14 @@ public class LiveHubTests : TestBaseSetup
         _siteOfUser = 0;
         var property = await PropertyAsync();
         await AssignAsync(0, property); // even a stray row for "site 0" grants nothing
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
 
         await hub.OnConnectedAsync();
 
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups("c1", ""), Is.Zero);
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))),
             Is.EqualTo(LiveHubContract.Errors.PropertyNotAvailable));
+        Assert.That(_registry.CountGroups("c1", ""), Is.Zero);
     }
 
     [Test]
@@ -298,7 +309,7 @@ public class LiveHubTests : TestBaseSetup
         await hub.OnDisconnectedAsync(null);
 
         Assert.That(_registry.SiteOf("c1"), Is.Null);
-        Assert.That(_registry.HasMembers(LiveHubContract.SiteGroup(WorkerSite)), Is.False);
+        Assert.That(_registry.EligibleMembers(LiveHubContract.SiteGroup(WorkerSite)), Is.Empty);
     }
 
     // ------------------------------------------------------------------
@@ -310,12 +321,12 @@ public class LiveHubTests : TestBaseSetup
     {
         var property = await PropertyAsync();
         await AssignAsync(WorkerSite, property);
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
         await hub.OnConnectedAsync();
 
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Results.Ok));
 
-        await groups.Received(1).AddToGroupAsync("c1", LiveHubContract.PropertyGroup(property), Arg.Any<CancellationToken>());
+        Assert.That(_registry.IsIn("c1", LiveHubContract.PropertyGroup(property)), Is.True);
         Assert.That(_registry.IsIn("c1", LiveHubContract.PropertyGroup(property)), Is.True);
     }
 
@@ -326,16 +337,15 @@ public class LiveHubTests : TestBaseSetup
         await AssignAsync(WorkerSite + 1, unassigned); // another worker's property
         var softDeleted = await PropertyAsync();
         await AssignAsync(WorkerSite, softDeleted, Constants.WorkflowStates.Removed);
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
         await hub.OnConnectedAsync();
-        groups.ClearReceivedCalls();
 
         var refusals = new List<string?>();
         foreach (var id in new[] { Id(unassigned), "987654321", Id(softDeleted), "abc", "-1", "0", "", " 1" })
             refusals.Add(await CodeOf(hub.JoinProperty(id)));
 
         Assert.That(refusals, Is.All.EqualTo(LiveHubContract.Errors.PropertyNotAvailable));
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups(_context.ConnectionId, LiveHubContract.PropertyGroupPrefix), Is.Zero);
     }
 
     [Test]
@@ -351,14 +361,13 @@ public class LiveHubTests : TestBaseSetup
     {
         var property = await PropertyAsync();
         await AssignAsync(WorkerSite, property);
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
         await hub.OnConnectedAsync();
-        groups.ClearReceivedCalls();
         _sites.GetSdkSiteIdForUserAsync(Arg.Any<EformUser>())
             .ThrowsAsync(new RpcException(new Status(StatusCode.Unauthenticated, GrpcSiteResolver.AccountDisabledDetail)));
 
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Errors.AccountDisabled));
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups(_context.ConnectionId, LiveHubContract.PropertyGroupPrefix), Is.Zero);
     }
 
     [Test]
@@ -373,11 +382,10 @@ public class LiveHubTests : TestBaseSetup
             _registry.Revoke(WorkerSite, property, LiveHubContract.PropertyGroup(property));
             return Task.FromResult(true);
         });
-        var (hub, groups) = Hub(access: access);
+        var (hub, _) = Hub(access: access);
         await hub.OnConnectedAsync();
 
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Errors.PropertyNotAvailable));
-        await groups.Received(1).RemoveFromGroupAsync("c1", LiveHubContract.PropertyGroup(property), Arg.Any<CancellationToken>());
         Assert.That(_registry.IsIn("c1", LiveHubContract.PropertyGroup(property)), Is.False);
     }
 
@@ -404,19 +412,17 @@ public class LiveHubTests : TestBaseSetup
     {
         var property = await PropertyAsync();
         await AssignAsync(WorkerSite, property);
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
         await hub.OnConnectedAsync();
-        groups.ClearReceivedCalls();
         _clock.SetUtcNow(GoodTokenExpiry + TestSkew - TimeSpan.FromSeconds(1));
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Results.Ok), "within the skew");
         Assert.That(_context.Aborted, Is.False);
         await hub.LeaveProperty(Id(property));
-        groups.ClearReceivedCalls();
         _clock.SetUtcNow(GoodTokenExpiry + TestSkew);
 
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Errors.NotAuthenticated));
         Assert.That(_context.Aborted, Is.True);
-        await groups.DidNotReceiveWithAnyArgs().AddToGroupAsync(default!, default!);
+        Assert.That(_registry.CountGroups(_context.ConnectionId, LiveHubContract.PropertyGroupPrefix), Is.Zero);
     }
 
     [Test]
@@ -424,7 +430,7 @@ public class LiveHubTests : TestBaseSetup
     {
         var property = await PropertyAsync();
         await AssignAsync(WorkerSite, property);
-        var (hub, groups) = Hub();
+        var (hub, _) = Hub();
         await hub.OnConnectedAsync();
         Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Results.Ok));
 
@@ -432,8 +438,6 @@ public class LiveHubTests : TestBaseSetup
         await hub.LeaveProperty(Id(property));
         await Assert.DoesNotThrowAsync(() => hub.LeaveProperty("abc"));
         await Assert.DoesNotThrowAsync(() => hub.LeaveProperty("987654321"));
-
-        await groups.Received(2).RemoveFromGroupAsync("c1", LiveHubContract.PropertyGroup(property), Arg.Any<CancellationToken>());
         Assert.That(_registry.IsIn("c1", LiveHubContract.PropertyGroup(property)), Is.False);
     }
 

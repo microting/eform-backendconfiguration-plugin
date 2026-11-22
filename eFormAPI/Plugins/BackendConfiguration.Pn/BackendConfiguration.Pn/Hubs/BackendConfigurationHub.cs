@@ -21,9 +21,9 @@ namespace BackendConfiguration.Pn.Hubs;
 /// <para>
 /// Groups: the worker's own site group, joined on connect; one group per
 /// property, joined only through <see cref="JoinProperty"/> after the same
-/// property-access check as the gRPC Events calls. Every join is recorded in
-/// <see cref="LiveConnectionRegistry"/> so that a revoked assignment can take
-/// live connections out again.
+/// property-access check as the gRPC Events calls. Group membership lives
+/// only in <see cref="LiveConnectionRegistry"/> (no SignalR groups): hints are
+/// sent to the connection ids it lists, so a revoke takes effect at once.
 /// </para>
 /// <para>
 /// A connection ends when its token expires: JoinProperty refuses and aborts
@@ -88,9 +88,7 @@ public class BackendConfigurationHub(
             Context.Items[ValidUntilKey] = validUntil.Value;
             if (caller.IsWorker)
             {
-                var group = LiveHubContract.SiteGroup(caller.SdkSiteId);
-                registry.Joined(Context.ConnectionId, group);
-                await Groups.AddToGroupAsync(Context.ConnectionId, group);
+                registry.Joined(Context.ConnectionId, LiveHubContract.SiteGroup(caller.SdkSiteId));
             }
 
             await base.OnConnectedAsync();
@@ -181,11 +179,9 @@ public class BackendConfigurationHub(
             return Result(LiveHubContract.Errors.PropertyNotAvailable);
 
         registry.Joined(Context.ConnectionId, group);
-        await Groups.AddToGroupAsync(Context.ConnectionId, group);
         if (registry.RevocationCount(caller.SdkSiteId, id) != revocationsBefore)
         {
             registry.Left(Context.ConnectionId, group);
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, group);
             return Result(LiveHubContract.Errors.PropertyNotAvailable);
         }
 
@@ -193,12 +189,11 @@ public class BackendConfigurationHub(
     }
 
     /// <summary>Leaves the property's group. Idempotent; a malformed or unknown id is a no-op.</summary>
-    public async Task LeaveProperty(string propertyId)
+    public Task LeaveProperty(string propertyId)
     {
-        if (!TryParseId(propertyId, out var id)) return;
-        var group = LiveHubContract.PropertyGroup(id);
-        registry.Left(Context.ConnectionId, group);
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, group);
+        if (TryParseId(propertyId, out var id))
+            registry.Left(Context.ConnectionId, LiveHubContract.PropertyGroup(id));
+        return Task.CompletedTask;
     }
 
     private static JoinPropertyResult Result(string code) => new() { Code = code };

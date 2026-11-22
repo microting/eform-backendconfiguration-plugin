@@ -14,9 +14,13 @@ namespace BackendConfiguration.Pn.Services.LiveNotifier;
 /// What later PRs call after a change has been committed (the change
 /// collector, the explicit SDK-write paths, the feed reader).
 /// <para>
-/// Every publish first ends the connections whose token has expired (removed
-/// from their groups, <c>Refused {code: "not_authenticated"}</c>, aborted), so
-/// an expired token receives no further hints.
+/// Group membership lives only in <see cref="LiveConnectionRegistry"/>; there
+/// are no SignalR groups. Every publish first ends the connections whose
+/// token has expired (taken out of the registry, <c>Refused {code:
+/// "not_authenticated"}</c>, aborted), then sends only to the connection ids
+/// the registry lists as valid members of the group
+/// (<see cref="LiveConnectionRegistry.EligibleMembers"/>): an expired or
+/// revoked connection receives no further hints.
 /// </para>
 /// <para>
 /// Safe to call from anywhere: never throws into the caller (a failure is
@@ -49,7 +53,7 @@ public interface ILiveNotifier
     Task RevokePropertyAccessAsync(int sdkSiteId, int propertyId);
 
     /// <summary>
-    /// Ends every live connection of the site: removes it from all its groups,
+    /// Ends every live connection of the site: takes it out of the registry,
     /// sends <c>Refused {code: "revoked"}</c> (best effort) and aborts it. Call
     /// after a worker is removed or resigned (or <c>IsActive</c> set false), or
     /// its site removed, has been committed. A reconnect then goes through the
@@ -79,17 +83,35 @@ public class LiveNotifier(
         SendAsync(LiveHubContract.SiteGroup(sdkSiteId), LiveHubContract.ServerMethods.AssignmentsChanged,
             () => new AssignmentsChangedMessage());
 
-    public async Task RevokePropertyAccessAsync(int sdkSiteId, int propertyId)
+    public Task RevokePropertyAccessAsync(int sdkSiteId, int propertyId)
     {
+        // Membership lives only in the registry, so taking the site's
+        // connections out of the group there is the whole revoke.
         var group = LiveHubContract.PropertyGroup(propertyId);
         try
         {
-            foreach (var connectionId in registry.Revoke(sdkSiteId, propertyId, group))
-                await hubContext.Groups.RemoveFromGroupAsync(connectionId, group).ConfigureAwait(false);
+            var taken = registry.Revoke(sdkSiteId, propertyId, group);
+            if (taken.Count > 0)
+                logger.LogInformation("Live hub: took {Count} connection(s) of site {SdkSiteId} out of {Group}",
+                    taken.Count, sdkSiteId, group);
         }
         catch (Exception e)
         {
             logger.LogWarning(e, "Live hub: revoking site {SdkSiteId} from {Group} failed", sdkSiteId, group);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void Abort(string connectionId, Action abort)
+    {
+        try
+        {
+            abort();
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "Live hub: aborting connection {ConnectionId} failed", connectionId);
         }
     }
 
@@ -105,15 +127,13 @@ public class LiveNotifier(
         }
     }
 
-    /// <summary>Removes the taken connections from their SignalR groups, tells them why and aborts them; per connection, never throws.</summary>
+    /// <summary>Tells the taken (already unlisted) connections why, then aborts them; per connection, never throws.</summary>
     private async Task EndAsync(IReadOnlyList<LiveConnectionRegistry.Taken> taken, string code)
     {
         foreach (var connection in taken)
         {
             try
             {
-                foreach (var group in connection.Groups)
-                    await hubContext.Groups.RemoveFromGroupAsync(connection.ConnectionId, group).ConfigureAwait(false);
                 // Clients(list), not Client(id): the latter is a default interface member.
                 await hubContext.Clients.Clients([connection.ConnectionId])
                     .SendAsync(LiveHubContract.ServerMethods.Refused, new RefusedMessage { Code = code })
@@ -125,14 +145,7 @@ public class LiveNotifier(
             }
             finally
             {
-                try
-                {
-                    connection.Abort();
-                }
-                catch (Exception e)
-                {
-                    logger.LogWarning(e, "Live hub: aborting connection {ConnectionId} failed", connection.ConnectionId);
-                }
+                Abort(connection.ConnectionId, connection.Abort);
             }
         }
 
@@ -145,8 +158,11 @@ public class LiveNotifier(
         try
         {
             await EndAsync(registry.TakeExpired(), LiveHubContract.Errors.NotAuthenticated).ConfigureAwait(false);
-            if (!registry.HasMembers(group)) return;
-            await hubContext.Clients.Group(group).SendAsync(method, payload()).ConfigureAwait(false);
+            // To the registry's eligible members: a connection taken out by a
+            // concurrent sweep or revoke is no longer listed, so it cannot receive.
+            var recipients = registry.EligibleMembers(group);
+            if (recipients.Count == 0) return;
+            await hubContext.Clients.Clients(recipients).SendAsync(method, payload()).ConfigureAwait(false);
         }
         catch (Exception e)
         {
