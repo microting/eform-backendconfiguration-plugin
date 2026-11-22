@@ -127,6 +127,26 @@ public class GrpcSiteResolverAccountDisabledTests : TestBaseSetup
         AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() => resolver.GetSdkSiteIdAsync()));
     }
 
+    /// <summary>
+    /// The live hub resolves a user that is not the request's (its WebSocket
+    /// token is not on HttpContext.User): same site, same refusals.
+    /// </summary>
+    [Test]
+    public async Task GetSdkSiteIdForUser_ResolvesTheSameSite_AndRefusesADisabledCaller()
+    {
+        var active = await SeedWorkerAsync();
+        var resigned = await SeedWorkerAsync(resigned: true);
+        var resolver = await CreateResolverAsync(email: null);
+
+        Assert.That(await resolver.GetSdkSiteIdForUserAsync(new EformUser { Id = 2, Email = active.Email, IsActive = true }),
+            Is.EqualTo(active.SiteId));
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() =>
+            resolver.GetSdkSiteIdForUserAsync(new EformUser { Id = 3, Email = resigned.Email, IsActive = true })));
+        AssertAccountDisabled(await Assert.ThrowsAsync<RpcException>(() =>
+            resolver.GetSdkSiteIdForUserAsync(new EformUser { Id = 4, Email = active.Email, IsActive = false })));
+        Assert.That(await resolver.GetSdkSiteIdForUserAsync(null!), Is.EqualTo(0));
+    }
+
     [Test]
     public async Task GetSdkSiteId_RemovedWorker_ResolvesToZero()
     {

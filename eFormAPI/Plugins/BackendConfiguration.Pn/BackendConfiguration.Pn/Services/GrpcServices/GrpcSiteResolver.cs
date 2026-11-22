@@ -7,6 +7,7 @@ using Microting.eForm.Infrastructure;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Database.Entities;
 
 namespace BackendConfiguration.Pn.Services.GrpcServices;
 
@@ -20,6 +21,15 @@ public interface IGrpcSiteResolver
     /// account is disabled — see <see cref="EnsureCallerActiveAsync"/> (#1326).
     /// </summary>
     Task<int> GetSdkSiteIdAsync();
+
+    /// <summary>
+    /// <see cref="GetSdkSiteIdAsync"/> for a given user instead of the current
+    /// request's user: same lookups, same refusals. For callers that know the
+    /// user from somewhere other than the request principal (the live hub,
+    /// whose WebSocket token is not on HttpContext.User). A null user is
+    /// treated as "no current user" (0).
+    /// </summary>
+    Task<int> GetSdkSiteIdForUserAsync(EformUser user);
 
     /// <summary>
     /// Refuses a caller whose account is disabled: <c>EformUser.IsActive</c> is
@@ -67,7 +77,13 @@ public class GrpcSiteResolver(
 
     public async Task<int> GetSdkSiteIdAsync()
     {
-        var (worker, sdkDbContext) = await ResolveActiveCallerAsync().ConfigureAwait(false);
+        var user = await userService.GetCurrentUserAsync().ConfigureAwait(false);
+        return await GetSdkSiteIdForUserAsync(user).ConfigureAwait(false);
+    }
+
+    public async Task<int> GetSdkSiteIdForUserAsync(EformUser user)
+    {
+        var (worker, sdkDbContext) = await ResolveActiveCallerAsync(user).ConfigureAwait(false);
         if (sdkDbContext == null)
         {
             return 0;
@@ -106,10 +122,15 @@ public class GrpcSiteResolver(
         return siteWorker.SiteId ?? 0;
     }
 
-    public Task EnsureCallerActiveAsync() => ResolveActiveCallerAsync();
+    public async Task EnsureCallerActiveAsync()
+    {
+        var user = await userService.GetCurrentUserAsync().ConfigureAwait(false);
+        await ResolveActiveCallerAsync(user).ConfigureAwait(false);
+    }
 
     /// <summary>
-    /// Loads the current user and their SDK worker, and throws
+    /// Loads the user's SDK worker (the user is the current one for the gRPC
+    /// calls), and throws
     /// <c>Unauthenticated</c>/<see cref="AccountDisabledDetail"/> when the account
     /// is disabled. Resigning a worker (#1282) sets <c>EformUser.IsActive = false</c>
     /// and refuses new logins, but an issued JWT stays valid for up to 24h and the
@@ -122,9 +143,8 @@ public class GrpcSiteResolver(
     /// matches the email.
     /// </para>
     /// </summary>
-    private async Task<(Worker worker, MicrotingDbContext sdkDbContext)> ResolveActiveCallerAsync()
+    private async Task<(Worker worker, MicrotingDbContext sdkDbContext)> ResolveActiveCallerAsync(EformUser user)
     {
-        var user = await userService.GetCurrentUserAsync().ConfigureAwait(false);
         if (user == null)
         {
             return (null, null);
