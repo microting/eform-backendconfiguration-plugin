@@ -16,11 +16,15 @@ export class BackendConfigurationPropertiesPage {
 
   async goToProperties(): Promise<void> {
     const propertiesBtn = this.backendConfigurationPnPropertiesButton();
-    const isVisible = await propertiesBtn.isVisible();
-    if (!isVisible) {
-      await this.backendConfigurationPnButton().click();
+    const parentBtn = this.backendConfigurationPnButton();
+    // isVisible() does not wait, and the sidebar can render after the landing page. The default menu is flat; only
+    // menus from older databases have the parent to expand. An expanded one shows both, hence first().
+    await expect(propertiesBtn.or(parentBtn).first(), 'the sidebar shows Properties or its parent')
+      .toBeVisible({ timeout: API_TIMEOUT });
+    if (!(await propertiesBtn.isVisible())) {
+      await parentBtn.click({ timeout: UI_TIMEOUT });
     }
-    await propertiesBtn.click();
+    await propertiesBtn.click({ timeout: UI_TIMEOUT });
     await this.page.locator('app-properties-container').waitFor({ state: 'visible', timeout: UI_TIMEOUT });
   }
 
