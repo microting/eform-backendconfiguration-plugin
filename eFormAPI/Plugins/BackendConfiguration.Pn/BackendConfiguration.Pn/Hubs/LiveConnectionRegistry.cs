@@ -42,6 +42,15 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
     /// <summary>A connection taken out of the registry (it receives nothing from now on); the caller ends it.</summary>
     public sealed record Taken(string ConnectionId, Action Abort);
 
+    private volatile int _count;
+
+    /// <summary>
+    /// True while at least one connection is registered. A lock-free read for
+    /// the write path: with nobody connected the live-change pipeline skips
+    /// all work (a client that connects later resyncs on connect).
+    /// </summary>
+    public bool HasConnections => _count > 0;
+
     /// <summary>The registry's clock; the hub's expiry checks use the same one.</summary>
     public DateTimeOffset UtcNow => timeProvider.GetUtcNow();
 
@@ -57,6 +66,7 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
         {
             if (_connections.Values.Count(c => c.UserId == userId) >= maxPerUser) return false;
             _connections[connectionId] = new Connection(userId, expiresAt, abort);
+            _count = _connections.Count;
             return true;
         }
     }
@@ -70,7 +80,10 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
     public void Disconnected(string connectionId)
     {
         lock (_gate)
+        {
             _connections.Remove(connectionId);
+            _count = _connections.Count;
+        }
     }
 
     /// <summary>The site the connection was opened for, or null when it is not registered.</summary>
@@ -181,6 +194,8 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
                 _connections.Remove(id);
                 taken.Add(new Taken(id, c.Abort));
             }
+
+            _count = _connections.Count;
         }
         return taken;
     }

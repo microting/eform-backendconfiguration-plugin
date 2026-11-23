@@ -65,7 +65,9 @@ public class BackendConfigurationAssignmentWorkerService(
     Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService reconciliationService,
     ILederService leder,
     // #1384 — optional so the fixtures that build this by hand keep working.
-    Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null)
+    Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null,
+    // Live-update hints (package 10); optional for the same reason.
+    Services.LiveChanges.ILiveChanges liveChanges = null)
     : IBackendConfigurationAssignmentWorkerService
 {
     // How long the workers list waits for Microting's unit versions; a slower refresh
@@ -451,6 +453,9 @@ public class BackendConfigurationAssignmentWorkerService(
                     logger.LogError(siteDeleteEx, "Delete: core.SiteDelete failed for site MicrotingUid {Uid}", site.MicrotingUid);
                 }
             }
+
+            // The worker is gone: end its live connections (deviceUserId is the SDK Sites.Id).
+            liveChanges?.RevokeSite(deviceUserId);
 
             return new OperationResult(true,
                 backendConfigurationLocalizationService.GetString("SuccessfullyDeleteAssignmentsProperties"));
@@ -1026,6 +1031,16 @@ public class BackendConfigurationAssignmentWorkerService(
             timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService,
             taskTranslationFiller, await LederCallerAsync().ConfigureAwait(false));
 
+        if (result.Success && liveChanges != null && deviceUserModel.SiteMicrotingUid > 0)
+        {
+            // A resigned worker's login is deactivated with it: end its live connections.
+            // Otherwise its worker tags may have changed: tell its devices to resync.
+            if (deviceUserModel.Resigned)
+                liveChanges.RevokeSiteForSiteUid(deviceUserModel.SiteMicrotingUid);
+            else
+                liveChanges.AssignmentsChangedForSiteUid(deviceUserModel.SiteMicrotingUid);
+        }
+
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
 
@@ -1064,6 +1079,12 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await WorkerTagsBulkUpdateHelper.BulkUpdate(model, core.DbContextHelper.GetDbContext(),
             reconciliationService, logger).ConfigureAwait(false);
+
+        if (result.Success && liveChanges != null)
+        {
+            foreach (var siteId in (model.SiteIds ?? []).Distinct())
+                liveChanges.AssignmentsChanged(siteId);
+        }
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }

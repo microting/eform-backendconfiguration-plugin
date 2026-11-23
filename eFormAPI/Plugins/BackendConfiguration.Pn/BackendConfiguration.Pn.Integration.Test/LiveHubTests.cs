@@ -371,6 +371,35 @@ public class LiveHubTests : TestBaseSetup
     }
 
     [Test]
+    public async Task JoinProperty_CallerDisabledSinceConnect_EndsTheConnection()
+    {
+        // Review round 1: a caller the join resolves as disabled is not only refused the
+        // group, its connection ends (Refused, aborted, out of the registry), so it stops
+        // receiving hints for the groups it had joined.
+        var property = await PropertyAsync();
+        await AssignAsync(WorkerSite, property);
+        var (hub, _) = Hub();
+        await hub.OnConnectedAsync();
+        Assert.That(await CodeOf(hub.JoinProperty(Id(property))), Is.EqualTo(LiveHubContract.Results.Ok));
+        _sites.GetSdkSiteIdForUserAsync(Arg.Any<EformUser>())
+            .ThrowsAsync(new RpcException(new Status(StatusCode.Unauthenticated, GrpcSiteResolver.AccountDisabledDetail)));
+        var other = await PropertyAsync();
+        await AssignAsync(WorkerSite, other);
+
+        Assert.That(await CodeOf(hub.JoinProperty(Id(other))), Is.EqualTo(LiveHubContract.Errors.AccountDisabled));
+        var refused = _caller.ReceivedCalls().Last();
+        Assert.Multiple(() =>
+        {
+            Assert.That(refused.GetArguments()[0], Is.EqualTo(LiveHubContract.ServerMethods.Refused));
+            Assert.That(((object?[])refused.GetArguments()[1]!).Single(),
+                Is.EqualTo(new RefusedMessage { Code = LiveHubContract.Errors.AccountDisabled }));
+            Assert.That(_context.Aborted, Is.True);
+            Assert.That(_registry.SiteOf(_context.ConnectionId), Is.Null);
+            Assert.That(_registry.EligibleMembers(LiveHubContract.PropertyGroup(property)), Is.Empty);
+        });
+    }
+
+    [Test]
     public async Task JoinProperty_RevokedWhileJoining_IsUndone()
     {
         var property = await PropertyAsync();

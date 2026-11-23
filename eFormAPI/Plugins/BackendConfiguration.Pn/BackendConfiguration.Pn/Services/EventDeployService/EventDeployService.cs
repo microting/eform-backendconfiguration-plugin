@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
+using BackendConfiguration.Pn.Services.LiveChanges;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.WorkerTagMembership;
 using Microsoft.EntityFrameworkCore;
@@ -141,6 +142,11 @@ public class EventDeployService(
         int sdkSiteId,
         CancellationToken cancellationToken)
     {
+        // Only the read paths call this (ListEvents, ListChanges, every 5 s
+        // StreamEventChanges tick): the rows it writes are not announced as live
+        // changes, or every poll of an installed app would become a hint storm.
+        using var readPath = serviceProvider.GetService<ILiveChanges>()?.BeginReadPath();
+
         if (!int.TryParse(propertyId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var propertyIdInt))
         {
             // Caller already validated this for the gRPC read path; defensive

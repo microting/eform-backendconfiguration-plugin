@@ -161,6 +161,12 @@ public class BackendConfigurationHub(
         }
         catch (HubException e)
         {
+            // The caller is disabled, resigned or gone since connect (possibly in the
+            // host's user admin, which revokes nothing itself): end the connection, so
+            // it also stops receiving the groups it had joined.
+            registry.Disconnected(Context.ConnectionId);
+            Context.Items.Remove(UserIdKey);
+            await RefuseAsync(e.Message, userId);
             return Result(e.Message);
         }
 
