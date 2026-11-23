@@ -103,6 +103,7 @@ using Services.SecurityGroupBackfillService;
 using Services.Leder;
 using Services.PluginMenuSyncService;
 using Services.LiveChanges;
+using Services.LiveFeed;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -129,6 +130,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddBackendConfigurationLiveHub();
         // ... and their publishers: SaveChanges interceptors + the scoped collector (Services/LiveChanges).
         services.AddBackendConfigurationLiveChanges();
+        // ... and the reader of the background service's change feed (a hosted service).
+        services.AddBackendConfigurationLiveFeed();
         services.AddTransient<Services.UserPropertyAccess.IBackendConfigurationUserPropertyAccess,
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,

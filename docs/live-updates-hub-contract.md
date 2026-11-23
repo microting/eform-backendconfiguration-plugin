@@ -140,10 +140,29 @@ The worker's property assignments or worker tags changed.
      `ListChanges`.
    - There are no sequence numbers. Any gap is closed by refetching.
 4. **Keep a slow safety poll** (for example `ListChanges` every 5 min). Some writers are not
-   announced yet (the background service and SDK-only paths, in later PRs), and messages may be
-   lost.
+   announced (see "What is announced" below), and messages may be lost.
 
 Installed apps ignore all of this. The 5-second `StreamEventChanges` is unchanged.
+
+## What is announced
+
+- **Writes in the web host** (calendar, task wizard, compliance, assignments, the mobile gRPC
+  writes): right after the change is committed, after the request ends.
+- **Writes of the background service** (its scheduled jobs and message handlers): through the
+  change feed. The service appends a row to `TaskChangeFeedEntries`; the web host polls it about
+  once a second and forwards each row as the same `TaskChanged` / `AssignmentsChanged` hints.
+  - Expected delay: about 1-2 s after the service's commit. A row that becomes visible late (an
+    id committed out of order) is caught by a 10 s window, so the delay is at most about 10 s.
+  - A burst (a daily job writing hundreds of rows) is coalesced like a request: more than 5 tasks
+    of one property become one `kind: property` hint. A reader that falls far behind sends one
+    `kind: property` hint per affected property and continues from the newest row.
+  - Nothing is replayed: rows written while no client was connected are not sent later (the
+    client resyncs on connect anyway).
+- **Not announced, left to the safety poll:** writes made by other plugins (for example the
+  items-planning plugin's own UI), writes through other processes that do not append to the feed,
+  a feed row visible more than 10 s late, and messages lost on a reconnect.
+- **Capability:** there is no separate capability for the feed. `live_hub` stays the only one;
+  a client keeps the same safety poll either way.
 
 ## Evolution
 
@@ -168,6 +187,9 @@ Installed apps ignore all of this. The 5-second `StreamEventChanges` is unchange
     resync.
   - Running several replicas would need a backplane (for example Redis), or would have to route
     every publish through a shared feed.
+  - The feed reader assumes it too: with two web-host replicas, each would forward every feed row
+    to its own connections. Each connection still receives each hint once (it is on one replica);
+    the only cost is that both replicas poll the table.
 - **Token expiry.** The server records each connection's "valid until" instant.
   - That instant is the token's `exp` plus 5 minutes (`LiveHubAuthenticator.ClockSkew`, equal to
     JwtBearer's default `ClockSkew`, which the host does not override).

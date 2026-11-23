@@ -114,27 +114,36 @@ internal sealed class LiveChangeTestHost : IDisposable
         Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[]? extraInterceptors = null)
     {
         if (connected) Registry.TryConnect("test-connection", 1, DateTimeOffset.MaxValue, () => { }, 10);
-        var extra = extraInterceptors ?? [];
+        _register = services =>
+        {
+            var extra = extraInterceptors ?? [];
+            services.AddSingleton(Registry);
+            services.AddLogging(b => b.AddProvider(Warnings).SetMinimumLevel(LogLevel.Debug));
+            services.AddSingleton<IHttpContextAccessor>(Http);
+            services.AddBackendConfigurationLiveChanges();
+            services.AddSingleton<ILiveNotifier>(Notifier);
+            var coreHelper = Substitute.For<IEFormCoreService>();
+            if (core != null) coreHelper.GetCore().Returns(Task.FromResult(core));
+            services.AddSingleton(coreHelper);
+            var bcVersion = ServerVersion.AutoDetect(bcConnectionString);
+            var ipVersion = ServerVersion.AutoDetect(ipConnectionString);
+            services.AddDbContextPool<BackendConfigurationPnDbContext>((sp, o) =>
+                o.UseMySql(bcConnectionString, bcVersion, b => b.EnableRetryOnFailure()).AddLiveChangeInterceptors(sp)
+                    .AddInterceptors(extra));
+            services.AddDbContextPool<ItemsPlanningPnDbContext>((sp, o) =>
+                o.UseMySql(ipConnectionString, ipVersion, b => b.EnableRetryOnFailure()).AddLiveChangeInterceptors(sp)
+                    .AddInterceptors(extra));
+            configure?.Invoke(services);
+        };
         var services = new ServiceCollection();
-        services.AddSingleton(Registry);
-        services.AddLogging(b => b.AddProvider(Warnings).SetMinimumLevel(LogLevel.Debug));
-        services.AddSingleton<IHttpContextAccessor>(Http);
-        services.AddBackendConfigurationLiveChanges();
-        services.AddSingleton<ILiveNotifier>(Notifier);
-        var coreHelper = Substitute.For<IEFormCoreService>();
-        if (core != null) coreHelper.GetCore().Returns(Task.FromResult(core));
-        services.AddSingleton(coreHelper);
-        var bcVersion = ServerVersion.AutoDetect(bcConnectionString);
-        var ipVersion = ServerVersion.AutoDetect(ipConnectionString);
-        services.AddDbContextPool<BackendConfigurationPnDbContext>((sp, o) =>
-            o.UseMySql(bcConnectionString, bcVersion, b => b.EnableRetryOnFailure()).AddLiveChangeInterceptors(sp)
-                .AddInterceptors(extra));
-        services.AddDbContextPool<ItemsPlanningPnDbContext>((sp, o) =>
-            o.UseMySql(ipConnectionString, ipVersion, b => b.EnableRetryOnFailure()).AddLiveChangeInterceptors(sp)
-                .AddInterceptors(extra));
-        configure?.Invoke(services);
+        _register(services);
         Provider = services.BuildServiceProvider();
     }
+
+    private readonly Action<IServiceCollection> _register;
+
+    /// <summary>The same registrations into another collection (e.g. a generic host's), sharing this host's registry and notifier.</summary>
+    public void RegisterInto(IServiceCollection services) => _register(services);
 
     /// <summary>
     /// Runs <paramref name="work"/> as one HTTP request (its own DI scope,

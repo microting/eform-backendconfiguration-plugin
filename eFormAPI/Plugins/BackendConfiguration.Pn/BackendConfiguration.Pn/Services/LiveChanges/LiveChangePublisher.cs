@@ -196,7 +196,8 @@ public sealed class LiveChangePublisher(
         var tasks = changes.Where(c => c.Kind == LiveChangeKind.Task).ToList();
         var eventIds = tasks.Where(c => c is { EventId: not null, PropertyId: null })
             .Select(c => c.EventId!.Value).Distinct().ToList();
-        var planningRows = tasks.Where(c => c is { EventId: null, ItemPlanningId: not null }).ToList();
+        // ItemPlanningId 0 ("not deployed") matches many tasks: never a lookup key (see Resolve).
+        var planningRows = tasks.Where(c => c is { EventId: null, ItemPlanningId: > 0 }).ToList();
         var onProperty = planningRows.Where(c => c.PropertyId is not null)
             .Select(c => (PlanningId: c.ItemPlanningId!.Value, PropertyId: c.PropertyId!.Value)).Distinct().ToList();
         var anywhere = planningRows.Where(c => c.PropertyId is null)
@@ -213,7 +214,7 @@ public sealed class LiveChangePublisher(
         var propertyOfEvent = new Dictionary<int, int>();
         var eventsOfPlanning = new Dictionary<int, List<LiveEventRef>>();
         var list = changes.ToList();
-        var inBatch = list.Where(c => c is { Kind: LiveChangeKind.Task, EventId: not null, ItemPlanningId: not null, PropertyId: not null })
+        var inBatch = list.Where(c => c is { Kind: LiveChangeKind.Task, EventId: not null, ItemPlanningId: > 0, PropertyId: not null })
             .Select(c => new LiveEventRef(c.EventId!.Value, c.ItemPlanningId!.Value, c.PropertyId!.Value));
         foreach (var e in lookups.Events.Concat(inBatch).Distinct())
         {
@@ -230,6 +231,12 @@ public sealed class LiveChangePublisher(
             {
                 var property = c.PropertyId ?? (propertyOfEvent.TryGetValue(eventId, out var p) ? p : (int?)null);
                 if (property is { } pid) hints.Add(new TaskHint(pid, eventId, c.PlanDay, c.ComplianceId, c.TaskKind));
+            }
+            else if (c.ItemPlanningId is { } notDeployed && notDeployed <= 0)
+            {
+                // Never resolved through planning 0; a row that names its property still tells it.
+                if (c.PropertyId is { } known)
+                    hints.Add(new TaskHint(known, null, null, null, TaskChangeKinds.Property));
             }
             else if (c.ItemPlanningId is { } planningId)
             {

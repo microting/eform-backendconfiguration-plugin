@@ -238,6 +238,26 @@ public class LiveChangePublisherTests
     }
 
     [Test]
+    public async Task PlanningIdZero_IsNeverLookedUp_AComplianceOfItStillTellsItsProperty()
+    {
+        // ItemPlanningId 0 means "not deployed" and matches many task rows: never a lookup key.
+        await _publisher.PublishAsync(
+        [
+            LiveChange.ForPlanning(0, Property, 500),
+            LiveChange.ForPlanning(0),
+            LiveChange.ForPlanning(-3),
+            LiveChange.ForAreaRulePlanning(7, 0, OtherProperty),
+        ]);
+
+        await _resolver.DidNotReceiveWithAnyArgs().LoadAsync(default!, default);
+        Assert.That(_notifier.Calls, Is.EquivalentTo(new[]
+        {
+            new Call("TaskChanged", Property, null, null, null, TaskChangeKinds.Property),
+            new Call("TaskChanged", OtherProperty, 7, null, null, TaskChangeKinds.Changed)
+        }));
+    }
+
+    [Test]
     public async Task ATaskRowAlone_NeedsNoLookup()
     {
         await _publisher.PublishAsync([LiveChange.ForAreaRulePlanning(7, 70, Property)]);
