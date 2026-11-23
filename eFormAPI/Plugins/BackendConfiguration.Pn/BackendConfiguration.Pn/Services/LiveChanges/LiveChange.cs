@@ -18,6 +18,12 @@ public enum LiveChangeKind
 
     /// <summary>End every connection of the site.</summary>
     RevokeSite,
+
+    /// <summary>Take every connection (workers and web users) out of the property group: the property was removed.</summary>
+    RevokePropertyForEveryone,
+
+    /// <summary>End every connection of a host user (<c>EformUser.Id</c>), whatever its site.</summary>
+    RevokeUser,
 }
 
 /// <summary>
@@ -40,7 +46,8 @@ public readonly record struct LiveChange(
     DateOnly? PlanDay = null,
     long? ComplianceId = null,
     string TaskKind = TaskChangeKinds.Changed,
-    int? SdkSiteId = null)
+    int? SdkSiteId = null,
+    int? UserId = null)
 {
     public static LiveChange ForTask(int propertyId, int? eventId = null, DateOnly? planDay = null,
         long? complianceId = null, string kind = TaskChangeKinds.Changed) =>
@@ -66,6 +73,11 @@ public readonly record struct LiveChange(
         new(LiveChangeKind.RevokeProperty, PropertyId: propertyId, SdkSiteId: sdkSiteId);
 
     public static LiveChange ForRevokeSite(int sdkSiteId) => new(LiveChangeKind.RevokeSite, SdkSiteId: sdkSiteId);
+
+    public static LiveChange ForRevokePropertyForEveryone(int propertyId) =>
+        new(LiveChangeKind.RevokePropertyForEveryone, PropertyId: propertyId);
+
+    public static LiveChange ForRevokeUser(int userId) => new(LiveChangeKind.RevokeUser, UserId: userId);
 }
 
 /// <summary>Tuning of the coalescing in <see cref="LiveChangePublisher"/>.</summary>

@@ -60,6 +60,20 @@ public interface ILiveNotifier
     /// connect checks again (and is refused with <c>account_disabled</c>).
     /// </summary>
     Task RevokeSiteAsync(int sdkSiteId);
+
+    /// <summary>
+    /// Takes every live connection, worker or web user, out of the property's
+    /// group; the connections stay open. Call after the property's removal
+    /// has been committed. A join racing with it is undone.
+    /// </summary>
+    Task RevokePropertyForEveryoneAsync(int propertyId);
+
+    /// <summary>
+    /// Ends every live connection of the host user (<c>EformUser.Id</c>),
+    /// whatever its site: <c>Refused {code: "revoked"}</c>, then abort. Call
+    /// after the login was deactivated or deleted.
+    /// </summary>
+    Task RevokeUserAsync(int userId);
 }
 
 public class LiveNotifier(
@@ -101,6 +115,36 @@ public class LiveNotifier(
         }
 
         return Task.CompletedTask;
+    }
+
+    public Task RevokePropertyForEveryoneAsync(int propertyId)
+    {
+        var group = LiveHubContract.PropertyGroup(propertyId);
+        try
+        {
+            var taken = registry.RevokePropertyForEveryone(propertyId, group);
+            if (taken.Count > 0)
+                logger.LogInformation("Live hub: took {Count} connection(s) out of {Group} (property removed)",
+                    taken.Count, group);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "Live hub: revoking {Group} for everyone failed", group);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task RevokeUserAsync(int userId)
+    {
+        try
+        {
+            await EndAsync(registry.TakeUser(userId), LiveHubContract.Errors.Revoked).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "Live hub: revoking user {UserId} failed", userId);
+        }
     }
 
     private void Abort(string connectionId, Action abort)

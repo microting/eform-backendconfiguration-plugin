@@ -33,6 +33,9 @@ public interface ILiveChanges
     /// <summary>Ends every connection of the site, at once (SDK <c>Sites.Id</c>).</summary>
     void RevokeSite(int sdkSiteId);
 
+    /// <summary>Ends every connection of the host user (<c>EformUser.Id</c>), at once, whatever its site.</summary>
+    void RevokeUser(int userId);
+
     /// <summary>
     /// Marks the scope as a read path until disposed: rows written meanwhile
     /// (eager deploys behind ListEvents / ListChanges / StreamEventChanges) are
@@ -76,6 +79,8 @@ public sealed class LiveChangeCollector(
         Accept([LiveChange.ForRevokeProperty(sdkSiteId, propertyId)]);
 
     public void RevokeSite(int sdkSiteId) => Accept([LiveChange.ForRevokeSite(sdkSiteId)]);
+
+    public void RevokeUser(int userId) => Accept([LiveChange.ForRevokeUser(userId)]);
 
     public IDisposable BeginReadPath()
     {

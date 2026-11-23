@@ -13,6 +13,7 @@ using BcCalendarConfiguration = Microting.EformBackendConfigurationBase.Infrastr
 using BcCalendarOccurrenceException = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.CalendarOccurrenceException;
 using BcCompliance = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance;
 using BcPlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
+using BcProperty = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Property;
 using BcPropertyWorker = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PropertyWorker;
 using IpPlanning = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.Planning;
 using IpPlanningCase = Microting.ItemsPlanningBase.Infrastructure.Data.Entities.PlanningCase;
@@ -36,9 +37,17 @@ internal static class LiveChangeCapture
     private const string Removed = Constants.WorkflowStates.Removed;
 
     private static bool IsWatched(object entity) => entity is BcCompliance or BcAreaRulePlanning or BcPlanningSite
-        or BcPropertyWorker or BcCalendarOccurrenceException or BcAreaRulePlanningWorkerTag
+        or BcPropertyWorker or BcProperty or BcCalendarOccurrenceException or BcAreaRulePlanningWorkerTag
         or BcCalendarConfiguration or BcAreaRulePlanningFile or BcAreaRulePlanningTag or BcCalendarBoard
         or IpPlanning or IpPlanningSite or IpPlanningCase or IpPlanningCaseSite or IpPlanningNameTranslation;
+
+    /// <summary>
+    /// The rows a revocation can come from: an assignment (PropertyWorker, also
+    /// a resync hint) and a property (its removal revokes it for everyone). The
+    /// snapshot keeps only these with no audience or in a read path, because a
+    /// connection may join before the save commits and must then be revoked.
+    /// </summary>
+    private static bool IsRevocationRow(object entity) => entity is BcPropertyWorker or BcProperty;
 
     /// <summary>
     /// The tracked states as they are, WITHOUT running change detection:
@@ -46,13 +55,13 @@ internal static class LiveChangeCapture
     /// AutoDetectChanges off, when EF runs none). <c>Entries()</c> detects
     /// again when AutoDetectChanges is on, so it is switched off around the read.
     /// </summary>
-    public static List<CapturedEntry> Snapshot(ChangeTracker tracker, bool propertyWorkersOnly)
+    public static List<CapturedEntry> Snapshot(ChangeTracker tracker, bool revocationRowsOnly)
     {
         var autoDetect = tracker.AutoDetectChangesEnabled;
         tracker.AutoDetectChangesEnabled = false;
         try
         {
-            return Read(tracker, propertyWorkersOnly);
+            return Read(tracker, revocationRowsOnly);
         }
         finally
         {
@@ -60,13 +69,13 @@ internal static class LiveChangeCapture
         }
     }
 
-    private static List<CapturedEntry> Read(ChangeTracker tracker, bool propertyWorkersOnly)
+    private static List<CapturedEntry> Read(ChangeTracker tracker, bool revocationRowsOnly)
     {
         var captured = new List<CapturedEntry>();
         foreach (var entry in tracker.Entries())
         {
             if (entry.State is not (EntityState.Added or EntityState.Modified or EntityState.Deleted)) continue;
-            if (propertyWorkersOnly ? entry.Entity is not BcPropertyWorker : !IsWatched(entry.Entity)) continue;
+            if (revocationRowsOnly ? !IsRevocationRow(entry.Entity) : !IsWatched(entry.Entity)) continue;
             string? original = null;
             if (entry.State != EntityState.Added && entry.Metadata.FindProperty("WorkflowState") is { } workflowState)
                 original = entry.OriginalValues[workflowState] as string;
@@ -127,6 +136,12 @@ internal static class LiveChangeCapture
                     if (entry.State != EntityState.Added && entry.OriginalWorkflowState == current) break;
                     if (removed) changes.Add(LiveChange.ForRevokeProperty(x.WorkerId, x.PropertyId));
                     changes.Add(LiveChange.ForAssignments(x.WorkerId));
+                    break;
+                // A removed property: every connection (workers and web calendar users) leaves its
+                // group. Its tasks' own rows announce themselves; other edits of the property row
+                // change nothing on the task list.
+                case BcProperty x:
+                    if (removed) changes.Add(LiveChange.ForRevokePropertyForEveryone(x.Id));
                     break;
                 case IpPlanning x:
                     changes.Add(LiveChange.ForPlanning(x.Id, kind: kind));

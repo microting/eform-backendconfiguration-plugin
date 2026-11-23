@@ -19,9 +19,12 @@ namespace BackendConfiguration.Pn.Hubs;
 /// <c>?access_token=</c> for WebSockets) and the gRPC handlers' caller rules.
 /// </para>
 /// <para>
-/// Groups: the worker's own site group, joined on connect; one group per
-/// property, joined only through <see cref="JoinProperty"/> after the same
-/// property-access check as the gRPC Events calls. Group membership lives
+/// Two caller kinds: a worker (an SDK site) and, since package 11b, a web
+/// user (signed in and active, no site). Groups: the worker's own site group,
+/// joined on connect (a web connection joins none); one group per property,
+/// joined through <see cref="JoinProperty"/> (the workers' rule, the same
+/// property-access check as the gRPC Events calls) or
+/// <see cref="JoinCalendarProperty"/> (the web calendar's rule). Group membership lives
 /// only in <see cref="LiveConnectionRegistry"/> (no SignalR groups): hints are
 /// sent to the connection ids it lists, so a revoke takes effect at once.
 /// </para>
@@ -38,7 +41,8 @@ public class BackendConfigurationHub(
     ILiveCallerResolver callers,
     ILivePropertyAccess propertyAccess,
     LiveConnectionRegistry registry,
-    ILogger<BackendConfigurationHub> logger) : Hub
+    ILogger<BackendConfigurationHub> logger,
+    ILiveCalendarPropertyAccess calendarAccess) : Hub
 {
     internal const string UserIdKey = "backend-configuration.live.user-id";
     internal const string ValidUntilKey = "backend-configuration.live.valid-until";
@@ -142,7 +146,37 @@ public class BackendConfigurationHub(
     /// <see cref="LiveHubContract.Errors.NotAuthenticated"/> and the connection
     /// is closed.
     /// </summary>
-    public async Task<JoinPropertyResult> JoinProperty(string propertyId)
+    public Task<JoinPropertyResult> JoinProperty(string propertyId) =>
+        JoinAsync(propertyId, propertyAccess.CanJoinPropertyAsync);
+
+    /// <summary>Leaves the property's group. Idempotent; a malformed or unknown id is a no-op.</summary>
+    public Task LeaveProperty(string propertyId)
+    {
+        if (TryParseId(propertyId, out var id))
+            registry.Left(Context.ConnectionId, LiveHubContract.PropertyGroup(id));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The web calendar's join (package 11b): the SAME property group as
+    /// <see cref="JoinProperty"/> (the publishers send there), under the
+    /// calendar's rule: any connected, active user, worker or web user, for any
+    /// existing, non-removed property (<see cref="ILiveCalendarPropertyAccess"/>).
+    /// Same result codes, same uniform refusal, same per-join checks (expiry,
+    /// caller re-resolved, which re-checks <c>IsActive</c>), same cap and
+    /// revoke-race guard as <see cref="JoinProperty"/>.
+    /// </summary>
+    public Task<JoinPropertyResult> JoinCalendarProperty(string propertyId) =>
+        JoinAsync(propertyId, calendarAccess.CanJoinCalendarPropertyAsync);
+
+    /// <summary>
+    /// Leaves the property's group: one membership per (connection, property),
+    /// however it was joined, so this is <see cref="LeaveProperty"/>.
+    /// </summary>
+    public Task LeaveCalendarProperty(string propertyId) => LeaveProperty(propertyId);
+
+    /// <summary>The shared join: expiry, caller, id, cap, the rule, and the revoke-race guard.</summary>
+    private async Task<JoinPropertyResult> JoinAsync(string propertyId, Func<LiveCaller, int, Task<bool>> allowed)
     {
         if (!Context.Items.TryGetValue(UserIdKey, out var item) || item is not int userId)
             return Result(LiveHubContract.Errors.NotAuthenticated);
@@ -181,7 +215,7 @@ public class BackendConfigurationHub(
         // Read BEFORE the access check: a revoke between the check and the
         // add changes it, and the join is undone (kanban's KanbanHub.Join).
         var revocationsBefore = registry.RevocationCount(caller.SdkSiteId, id);
-        if (!await propertyAccess.CanJoinPropertyAsync(caller, id))
+        if (!await allowed(caller, id))
             return Result(LiveHubContract.Errors.PropertyNotAvailable);
 
         registry.Joined(Context.ConnectionId, group);
@@ -192,14 +226,6 @@ public class BackendConfigurationHub(
         }
 
         return Result(LiveHubContract.Results.Ok);
-    }
-
-    /// <summary>Leaves the property's group. Idempotent; a malformed or unknown id is a no-op.</summary>
-    public Task LeaveProperty(string propertyId)
-    {
-        if (TryParseId(propertyId, out var id))
-            registry.Left(Context.ConnectionId, LiveHubContract.PropertyGroup(id));
-        return Task.CompletedTask;
     }
 
     private static JoinPropertyResult Result(string code) => new() { Code = code };

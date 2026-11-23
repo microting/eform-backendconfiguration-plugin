@@ -20,7 +20,7 @@ using NSubstitute;
 public sealed class RecordingLiveNotifier : ILiveNotifier
 {
     public sealed record Call(string Method, int? PropertyId = null, int? EventId = null, DateOnly? PlanDay = null,
-        long? ComplianceId = null, string? Kind = null, int? SdkSiteId = null);
+        long? ComplianceId = null, string? Kind = null, int? SdkSiteId = null, int? UserId = null);
 
     private readonly List<Call> _calls = [];
 
@@ -62,6 +62,11 @@ public sealed class RecordingLiveNotifier : ILiveNotifier
         Record(new Call("RevokePropertyAccess", PropertyId: propertyId, SdkSiteId: sdkSiteId));
 
     public Task RevokeSiteAsync(int sdkSiteId) => Record(new Call("RevokeSite", SdkSiteId: sdkSiteId));
+
+    public Task RevokePropertyForEveryoneAsync(int propertyId) =>
+        Record(new Call("RevokePropertyForEveryone", PropertyId: propertyId));
+
+    public Task RevokeUserAsync(int userId) => Record(new Call("RevokeUser", UserId: userId));
 }
 
 /// <summary>Counts Warning-level entries per category, for "logged once" assertions.</summary>

@@ -19,6 +19,8 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="11.0.0" />
+        <!-- Test-only: the host's real JwtBearer handler (host eFormAPI.Web.csproj pins 11.0.0) for the live hub wire test. -->
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0" />
         <PackageReference Include="Testcontainers" Version="4.17.0" />
         <PackageReference Include="Testcontainers.MariaDb" Version="4.17.0" />
         <PackageReference Include="WireMock.Net" Version="2.31.0" />

@@ -1040,7 +1040,9 @@ public class BackendConfigurationAssignmentWorkerService(
                     liveChanges?.RevokeSite(siteId);
                 else
                     liveChanges?.AssignmentsChanged(siteId);
-            });
+            },
+            // The login is deactivated: also end its connections that carry no site (web calendar).
+            loginDeactivated: loginId => liveChanges?.RevokeUser(loginId));
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }

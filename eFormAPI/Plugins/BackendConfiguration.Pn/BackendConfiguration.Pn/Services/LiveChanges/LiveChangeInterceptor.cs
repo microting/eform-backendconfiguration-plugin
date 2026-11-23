@@ -51,7 +51,7 @@ public sealed class LiveChangeTargets(IHttpContextAccessor? httpContextAccessor 
 /// per-save state is keyed by context instance (as kanban's interceptor).
 /// <list type="bullet">
 ///   <item>SavingChanges: an in-memory snapshot of the watched rows (no query, no I/O).
-///     In a read path (<see cref="ILiveChanges.BeginReadPath"/>) only assignment rows are kept.</item>
+///     In a read path (<see cref="ILiveChanges.BeginReadPath"/>) only revocation rows (assignments, properties) are kept.</item>
 ///   <item>SavedChanges outside a transaction: the changes are committed; they go to the
 ///     collector (sent when its scope ends) or, with none, are published at once in the background.</item>
 ///   <item>SavedChanges inside a transaction: held until <see cref="LiveChangeTransactionInterceptor"/>
@@ -68,10 +68,10 @@ public sealed class LiveChangeInterceptor(
 {
 
     /// <summary>A save in progress: its collector, and its snapshot once EF's own change detection has run.</summary>
-    private sealed class Pending(LiveChangeCollector? target, bool propertyWorkersOnly)
+    private sealed class Pending(LiveChangeCollector? target, bool revocationRowsOnly)
     {
         public LiveChangeCollector? Target { get; } = target;
-        public bool PropertyWorkersOnly { get; } = propertyWorkersOnly;
+        public bool RevocationRowsOnly { get; } = revocationRowsOnly;
         public List<CapturedEntry>? Entries { get; set; }
     }
 
@@ -158,8 +158,8 @@ public sealed class LiveChangeInterceptor(
 
     /// <summary>
     /// SavingChanges. Revocations are always captured, hints only with an
-    /// audience: while no hub connection exists only the PropertyWorker rows
-    /// are kept (no collector lookup), because a connection may join before
+    /// audience: while no hub connection exists only the revocation rows
+    /// (PropertyWorker, Property) are kept (no collector lookup), because a connection may join before
     /// this save commits and must then be revoked; the revoke at commit is a
     /// registry no-op if still nobody is connected. The save is marked, and the
     /// snapshot is taken from EF's OWN change
@@ -175,7 +175,7 @@ public sealed class LiveChangeInterceptor(
         {
             var audience = publisher.HasAudience;
             var target = audience ? targets.For(context) : null;
-            var pending = new Pending(target, propertyWorkersOnly: !audience || target?.IsReadPath == true);
+            var pending = new Pending(target, revocationRowsOnly: !audience || target?.IsReadPath == true);
             var tracker = context.ChangeTracker;
             if (tracker.AutoDetectChangesEnabled)
             {
@@ -186,7 +186,7 @@ public sealed class LiveChangeInterceptor(
             }
             else
             {
-                pending.Entries = LiveChangeCapture.Snapshot(tracker, pending.PropertyWorkersOnly);
+                pending.Entries = LiveChangeCapture.Snapshot(tracker, pending.RevocationRowsOnly);
             }
 
             _pending.AddOrUpdate(context, pending);
@@ -206,7 +206,7 @@ public sealed class LiveChangeInterceptor(
         if (!_pending.TryGetValue(context, out var pending) || pending.Entries is not null) return;
         try
         {
-            pending.Entries = LiveChangeCapture.Snapshot(tracker, pending.PropertyWorkersOnly);
+            pending.Entries = LiveChangeCapture.Snapshot(tracker, pending.RevocationRowsOnly);
         }
         catch (Exception e)
         {
