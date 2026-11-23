@@ -178,19 +178,19 @@ describe('BackendConfigurationCalendarLiveService', () => {
     expect(connections.length).toBe(1);
     expect(last().joins()).toEqual(['5']);
     expect(service.isLive).toBe(true);
-    // The first join is announced, not resynced: the calendar decides whether its own load covers it.
-    expect(reasons()).toEqual(['joining:5', 'joined:5']);
+    // The first join is announced as `joined`: the calendar catches up once.
+    expect(reasons()).toEqual(['joined:5']);
   });
 
-  it('announces the first join synchronously, before the join is answered', async () => {
+  it('announces the first join only once it is answered ok', async () => {
     let answer!: (value: unknown) => void;
     configure = c => (c.joinResult = () => new Promise(resolve => (answer = resolve)));
     service.joinProperty(5);
     await flush();
-    expect(reasons()).toEqual(['joining:5']);
+    expect(reasons()).toEqual([]);
     answer({v: 1, code: 'ok'});
     await flush();
-    expect(reasons()).toEqual(['joining:5', 'joined:5']);
+    expect(reasons()).toEqual(['joined:5']);
   });
 
   it('leaves the previous property and joins the new one on the same connection', async () => {
@@ -241,7 +241,7 @@ describe('BackendConfigurationCalendarLiveService', () => {
     last().dropAndReconnect();
     await flush();
     expect(last().joins()).toEqual(['5', '5']);
-    expect(reasons()).toEqual(['joining:5', 'joined:5', 'resync:5']);
+    expect(reasons()).toEqual(['joined:5', 'resync:5']);
   });
 
   it('starts again with back-off after the connection is lost, then re-joins and resyncs', async () => {
@@ -254,7 +254,7 @@ describe('BackendConfigurationCalendarLiveService', () => {
     await flush();
     expect(connections.length).toBe(2);
     expect(last().joins()).toEqual(['5']);
-    expect(reasons()).toEqual(['joining:5', 'joined:5', 'resync:5']);
+    expect(reasons()).toEqual(['joined:5', 'resync:5']);
   });
 
   it('retries an unreachable hub with a growing delay and logs one debug line only', async () => {

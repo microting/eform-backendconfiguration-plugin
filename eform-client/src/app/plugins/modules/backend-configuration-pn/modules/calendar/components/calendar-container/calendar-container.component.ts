@@ -39,7 +39,7 @@ import {NgSwitch, NgSwitchCase} from '@angular/common';
 import {CalendarMonthViewComponent} from '../calendar-month-view/calendar-month-view.component';
 import {CalendarHeaderComponent} from '../calendar-header/calendar-header.component';
 import {CalendarScheduleViewComponent} from '../calendar-schedule-view/calendar-schedule-view.component';
-import {BackendConfigurationCalendarLiveService, CalendarLiveHint} from '../../services/calendar-live.service';
+import {BackendConfigurationCalendarLiveService} from '../../services/calendar-live.service';
 import {CalendarLiveReloadScheduler} from '../../services/calendar-live-reload.scheduler';
 
 @Component({
@@ -111,9 +111,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   });
   /** Move/resize requests under way: the grid already shows the optimistic position. */
   private pendingWrites = 0;
-  /** loadTasks() calls so far, and the count when the first join of the shown property was sent. */
-  private loadsStarted = 0;
-  private loadsAtJoin: number | null = null;
   /** The ticket of the task load still running, if any: a live reload waits for it rather than superseding it. */
   private loadInFlight: number | null = null;
 
@@ -243,7 +240,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   private wireLiveUpdates() {
     this.live.hints$
       .pipe(filter(hint => hint.propertyId === this.currentPropertyId), takeUntil(this.destroy$))
-      .subscribe(hint => this.onLiveHint(hint.reason));
+      .subscribe(() => this.liveReload.request()); // changed, resync, and the catch-up after the first join
     this.dialog.afterAllClosed.pipe(takeUntil(this.destroy$)).subscribe(() => this.liveReload.settle());
     // A drag or resize ends on mouseup/touchend; the debounce then gives the grid time to reset its state.
     merge(fromEvent(document, 'mouseup'), fromEvent(document, 'touchend'))
@@ -263,31 +260,31 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  private onLiveHint(reason: CalendarLiveHint['reason']) {
-    if (reason === 'joining') {
-      this.loadsAtJoin = this.loadsStarted;
-      return;
-    }
-    if (reason === 'joined') {
-      // Changes between our last load and the join were not hinted: reload unless a load started since.
-      const covered = this.loadsAtJoin !== this.loadsStarted;
-      this.loadsAtJoin = null;
-      if (covered) {
-        return;
-      }
-    }
-    this.liveReload.request();
-  }
-
   /** True while a live reload would disturb the user; the reload is then owed (see `liveReload`). */
   private isLiveReloadHeld(): boolean {
+    return this.loadInFlight !== null || this.isUserBusy();
+  }
+
+  /** A popover, dialog, drag/resize, save or hidden tab: applying a background answer now would disturb it. */
+  private isUserBusy(): boolean {
     return this.createOverlayRef !== null
       || this.previewOverlayRef !== null
       || this.dialog.openDialogs.length > 0
       || this.pendingWrites > 0
-      || this.loadInFlight !== null
       || !!this.weekGrid?.isInteracting
       || document.hidden;
+  }
+
+  /**
+   * A background answer that lands while the user has started something keeps the grid as it is and owes a fresh
+   * reload, which runs once the interaction settles. True when the answer must not be applied.
+   */
+  private deferBackgroundAnswer(): boolean {
+    if (!this.isUserBusy()) {
+      return false;
+    }
+    this.liveReload.request();
+    return true;
   }
 
   private loadSettled(seq: number) {
@@ -667,7 +664,6 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const background = options.background === true;
     // Any load reads everything a pending live reload would: that one is dropped.
     this.liveReload.loadStarted();
-    this.loadsStarted++;
 
     // Scope change: the buffers on screen were filled for another property or
     // by the OTHER render path, and the template is already reading them —
@@ -725,7 +721,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
         // clearTasks(). Dropping it here also keeps the failure branch below
         // from clearing a grid that now belongs to a newer load.
         if (seq !== this.loadSeq) return;
-        if (background && (!res || !res.success)) {
+        if (background && (!res || !res.success || this.deferBackgroundAnswer())) {
           return;
         }
         if (!res || !res.success) {
@@ -780,7 +776,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     forkJoin(calls).pipe(finalize(() => this.loadSettled(seq))).subscribe(results => {
       if (seq !== this.loadSeq) return;
       // A background reload is all or nothing: one failed week keeps the month on screen.
-      if (background && results.some(res => !res || !res.success)) {
+      if (background && (results.some(res => !res || !res.success) || this.deferBackgroundAnswer())) {
         return;
       }
       const teamNameById = this.teamNameMap();

@@ -321,21 +321,67 @@ describe('CalendarContainerComponent live updates', () => {
     expect(renderedTaskIds()).toEqual([]);
   });
 
-  it('reloads once after the first join when no load started since the join was sent', () => {
+  it('reloads once, in the background, after the first join', () => {
     const before = reloads();
-    hint(PROPERTY_A, 'joining');
     hint(PROPERTY_A, 'joined');
     vi.advanceTimersByTime(CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
     expect(reloads()).toBe(before + 1);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(1);
   });
 
-  it('does not reload after the first join when a load started after the join was sent', () => {
-    hint(PROPERTY_A, 'joining');
-    component.onGoToToday(); // e.g. the property switch's own load
+  it('still catches up after the first join when a load started while the join was under way', () => {
+    // That load may have read before the server registered the membership: only a catch-up covers the gap.
+    component.onGoToToday();
     const before = reloads();
     hint(PROPERTY_A, 'joined');
     vi.advanceTimersByTime(5 * CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
-    expect(reloads()).toBe(before);
+    expect(reloads()).toBe(before + 1);
+  });
+
+  it('does not apply a background answer when a drag started while it was in flight, and reloads once after the drag', () => {
+    const grid = {isInteracting: false, clearSelection: vi.fn()};
+    component.weekGrid = grid as unknown as CalendarWeekGridComponent;
+    const slow = new Subject<unknown>();
+    getTasksForWeekQuiet.mockReturnValueOnce(slow);
+    hint();
+    vi.advanceTimersByTime(CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(1);
+    grid.isInteracting = true; // the drag starts while the reload is in flight
+    slow.next({success: true, model: [{id: 303, propertyId: PROPERTY_A, taskDate: todayIso, startHour: 9, duration: 1, boardId: 10, title: 'C'}]});
+    slow.complete();
+    expect(renderedTaskIds()).toEqual([101]);
+    vi.advanceTimersByTime(5 * CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(1);
+    grid.isInteracting = false;
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    vi.advanceTimersByTime(CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(2);
+    expect(renderedTaskIds()).toEqual([101]);
+    vi.advanceTimersByTime(5 * CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not apply a background month answer when a drag started while it was in flight, and reloads once after', () => {
+    component.onViewModeChange('month');
+    const before = new Map(component.monthTasksByDate);
+    const grid = {isInteracting: false, clearSelection: vi.fn()};
+    component.weekGrid = grid as unknown as CalendarWeekGridComponent;
+    const slow = new Subject<unknown>();
+    getTasksForWeekQuiet.mockReturnValue(slow);
+    hint();
+    vi.advanceTimersByTime(CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(6);
+    grid.isInteracting = true;
+    slow.next({success: true, model: []});
+    slow.complete();
+    expect(component.monthTasksByDate).toEqual(before);
+    getTasksForWeekQuiet.mockReturnValue(of({success: true, model: []}));
+    vi.advanceTimersByTime(5 * CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(6);
+    grid.isInteracting = false;
+    document.dispatchEvent(new MouseEvent('mouseup'));
+    vi.advanceTimersByTime(CALENDAR_LIVE_RELOAD_DEBOUNCE_MS);
+    expect(getTasksForWeekQuiet).toHaveBeenCalledTimes(12);
   });
 
   it('holds a live reload while a user load is in flight, then runs exactly one background reload', () => {

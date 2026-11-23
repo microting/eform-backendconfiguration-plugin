@@ -30,12 +30,13 @@ export const CALENDAR_LIVE_TOO_MANY_CONNECTIONS_MS = 60_000;
 /**
  * - `changed`: something on the property changed; reload it.
  * - `resync`: the feed was interrupted (a reconnect); hints may be lost.
- * - `joining` / `joined`: the FIRST join of the property was sent / answered ok. Hints flow from `joined` on; a
- *   change between the calendar's own load and the join is only covered by a load that started after `joining`.
+ * - `joined`: the FIRST join of the property was answered ok. Hints flow from here on; a change made before the
+ *   server registered the membership is in no hint, and maybe not in a load the calendar started meanwhile, so the
+ *   calendar catches up once.
  */
 export interface CalendarLiveHint {
   propertyId: number;
-  reason: 'changed' | 'resync' | 'joining' | 'joined';
+  reason: 'changed' | 'resync' | 'joined';
 }
 
 /** The join result (`{"v":1,"code":"ok"}` or a refusal) and the `Refused` message share this shape. */
@@ -212,9 +213,6 @@ export class BackendConfigurationCalendarLiveService implements OnDestroy {
       return;
     }
     const firstJoin = this.joinedOnceFor !== propertyId;
-    if (firstJoin) {
-      this.hintsSubject.next({propertyId, reason: 'joining'});
-    }
     let result: LiveCodePayload | null;
     try {
       result = await connection.invoke<LiveCodePayload | null>('JoinCalendarProperty', String(propertyId));
