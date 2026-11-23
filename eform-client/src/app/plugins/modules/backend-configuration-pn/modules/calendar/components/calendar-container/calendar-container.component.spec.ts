@@ -188,7 +188,12 @@ describe('CalendarContainerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [CalendarContainerComponent, TranslateModule.forRoot()],
       providers: [
-        {provide: MatDialog, useValue: {open: vi.fn().mockReturnValue({afterClosed: () => of(false)})}},
+        // openDialogs/afterAllClosed: read by the live-update wiring (package 11c).
+        {provide: MatDialog, useValue: {
+          open: vi.fn().mockReturnValue({afterClosed: () => of(false)}),
+          openDialogs: [],
+          afterAllClosed: new Subject<void>(),
+        }},
         {provide: Overlay, useValue: {scrollStrategies: {reposition: vi.fn().mockReturnValue({})}}},
         {provide: Router, useValue: {navigate: vi.fn()}},
         {provide: Store, useValue: {select: vi.fn().mockReturnValue(of(false)), dispatch: vi.fn()}},

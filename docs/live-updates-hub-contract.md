@@ -138,6 +138,41 @@ version), and the mobile app does not use this method.
 **Security note.** Any signed-in, active web user can learn **that** something changed on any
 property id (ids only, never data), as they can already load that property's calendar.
 
+**The web calendar client (package 11c).** The code is `BackendConfigurationCalendarLiveService`
+and `CalendarLiveReloadScheduler` in `eform-client/.../modules/calendar/services/`.
+- There is one connection per open calendar view, and it ends with the view. It follows the
+  property on screen: `LeaveCalendarProperty` for the old one, `JoinCalendarProperty` for the new
+  one.
+- After a reconnect it joins again and the calendar reloads once (resync).
+- After the first join of a property is answered ok, the calendar always reloads once in the
+  background. A load started while the join was under way may have read before the server
+  registered the membership, so a change made in that gap is in neither that load nor a hint.
+- A `TaskChanged` for the property on screen reloads the week or month after about 1 s, one
+  reload per burst.
+- A live reload runs in the background. It uses the request that does not toast, and when any
+  request fails it keeps what is on screen. When the user starts an interaction (a popover, a
+  dialog, a drag or resize, a save, or hiding the tab) while the request is in flight, its answer
+  is not applied either, and one fresh reload runs after the interaction. Loads the user starts
+  are unchanged.
+- It never reloads while any of these is going on:
+  - a task popover or a dialog is open;
+  - a drag or a resize is under way;
+  - a move or resize is being saved;
+  - the tab is hidden.
+
+  The reload is then owed and runs once, after the interaction. A load the calendar starts itself
+  (navigation, the reload after its own save) counts as the owed reload.
+- The client is optional. It goes quiet for the life of the view, with at most one
+  `console.debug` line, when any of these happens:
+  - the negotiate answers 4xx (an older server without the hub);
+  - the method does not exist;
+  - `Refused` arrives with `account_disabled`, or with `not_authenticated` or `revoked` after one
+    reconnect.
+- The client never refreshes the session, because the host's refresh signs the user out when it
+  fails. Each connect sends the token the store holds at that moment.
+- An ordinary drop restarts with back-off: 5 s, doubling, up to 5 min. After
+  `too_many_connections` it waits at least 60 s. There is no safety poll.
+
 ## Server → client
 
 Every payload is one JSON object with `"v": 1`. Fields that the server does not know are
