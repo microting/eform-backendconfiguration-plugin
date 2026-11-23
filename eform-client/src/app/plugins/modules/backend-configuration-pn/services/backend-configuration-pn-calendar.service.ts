@@ -64,6 +64,16 @@ export class BackendConfigurationPnCalendarService {
       .pipe(tap((res) => this.notifyError(res)));
   }
 
+  /**
+   * Same request as getTasksForWeek, without the error toast: the calendar's live reload (package 11c) runs
+   * without a user action, and on failure it keeps the grid it has rather than telling anyone.
+   */
+  getTasksForWeekQuiet(
+    model: CalendarTaskWeekRequestModel
+  ): Observable<OperationDataResult<CalendarTaskModel[]>> {
+    return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.TasksWeek, model);
+  }
+
   getTasksIndex(model: CalendarTaskIndexRequestModel): Observable<OperationDataResult<CalendarTaskModel[]>> {
     return this.apiBaseService.postNoToast(BackendConfigurationPnCalendarMethods.Index, model)
       .pipe(tap((res) => this.notifyError(res)));

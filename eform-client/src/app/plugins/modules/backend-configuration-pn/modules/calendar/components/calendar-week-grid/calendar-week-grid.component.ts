@@ -9,8 +9,10 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  QueryList,
   TemplateRef,
   ViewChild,
+  ViewChildren,
   ViewEncapsulation,
 } from '@angular/core';
 import {CdkDragEnd, CdkDragMove, CdkDropList} from '@angular/cdk/drag-drop';
@@ -35,6 +37,9 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   @ViewChild('scrollContainer') scrollContainerRef!: ElementRef<HTMLElement>;
   @ViewChild('timeAxisTpl', {static: true}) timeAxisTpl!: TemplateRef<any>;
   @ViewChild('dayColTpl', {static: true}) dayColTpl!: TemplateRef<any>;
+  // The blocks are stamped from dayColTpl inside the mtx-grid; a view query still finds them, because Angular
+  // matches embedded views by where their template is declared (here), not where they are inserted.
+  @ViewChildren(CalendarTaskBlockComponent) private taskBlocks?: QueryList<CalendarTaskBlockComponent>;
 
   @Input() tasksByDay: CalendarTaskLayoutModel[][] = Array.from({length: 7}, () => []);
   @Input() allDayTasksByDay: CalendarTaskModel[][] = Array.from({length: 7}, () => []);
@@ -70,6 +75,14 @@ export class CalendarWeekGridComponent implements OnInit, AfterViewInit, OnChang
   dragSourceTop: number | null = null;
   dragSourceWidth: number = 0;
   private dragTargetDayIndex: number | null = null;
+
+  /**
+   * A drag or a resize is under way. The container holds live reloads back meanwhile (package 11c): a reload
+   * re-renders the blocks and would drop the one being moved.
+   */
+  get isInteracting(): boolean {
+    return this.draggingTask !== null || !!this.taskBlocks?.some(block => block.resizing !== null);
+  }
   private autoScrollAnimId: number | null = null;
   private autoScrollSpeed = 0;
 

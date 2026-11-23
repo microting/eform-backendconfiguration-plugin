@@ -1,9 +1,9 @@
-import {Component, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, inject, Injector, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {Overlay, OverlayRef, ConnectedPosition} from '@angular/cdk/overlay';
 import {ComponentPortal} from '@angular/cdk/portal';
 import {Router} from '@angular/router';
-import {BehaviorSubject, firstValueFrom, forkJoin, Observable, of, Subject} from 'rxjs';
-import {catchError, take, takeUntil} from 'rxjs/operators';
+import {BehaviorSubject, firstValueFrom, forkJoin, fromEvent, merge, Observable, of, Subject} from 'rxjs';
+import {catchError, filter, finalize, take, takeUntil} from 'rxjs/operators';
 import {Store} from '@ngrx/store';
 import {TranslateService} from '@ngx-translate/core';
 import {selectAuthUser, selectCurrentUserIsAdmin} from 'src/app/state/auth/auth.selector';
@@ -39,12 +39,16 @@ import {NgSwitch, NgSwitchCase} from '@angular/common';
 import {CalendarMonthViewComponent} from '../calendar-month-view/calendar-month-view.component';
 import {CalendarHeaderComponent} from '../calendar-header/calendar-header.component';
 import {CalendarScheduleViewComponent} from '../calendar-schedule-view/calendar-schedule-view.component';
+import {BackendConfigurationCalendarLiveService, CalendarLiveHint} from '../../services/calendar-live.service';
+import {CalendarLiveReloadScheduler} from '../../services/calendar-live-reload.scheduler';
 
 @Component({
   selector: 'app-calendar-container',
   imports: [NgSwitch, NgSwitchCase, CalendarMonthViewComponent, CalendarWeekGridComponent, CalendarHeaderComponent, CalendarScheduleViewComponent],
   templateUrl: './calendar-container.component.html',
   styleUrls: ['./calendar-container.component.scss'],
+  // One live connection per calendar view: it ends with the view (navigation away, sign-out).
+  providers: [BackendConfigurationCalendarLiveService],
 })
 export class CalendarContainerComponent implements OnInit, OnDestroy {
   @ViewChild(CalendarWeekGridComponent) weekGrid?: CalendarWeekGridComponent;
@@ -97,6 +101,21 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // was a private detail of loadMonthTasks that nobody had to keep in step.
   // A single counter cannot drift out of step with itself.
   private loadSeq = 0;
+
+  // Live updates (package 11c): a hint reloads the tasks in the background after a debounce, held back while
+  // the user is busy (isLiveReloadHeld) and then run once the interaction ends.
+  private readonly live = inject(BackendConfigurationCalendarLiveService);
+  private readonly liveReload = new CalendarLiveReloadScheduler({
+    reload: () => this.loadTasks({background: true}),
+    isBusy: () => this.isLiveReloadHeld(),
+  });
+  /** Move/resize requests under way: the grid already shows the optimistic position. */
+  private pendingWrites = 0;
+  /** loadTasks() calls so far, and the count when the first join of the shown property was sent. */
+  private loadsStarted = 0;
+  private loadsAtJoin: number | null = null;
+  /** The ticket of the task load still running, if any: a live reload waits for it rather than superseding it. */
+  private loadInFlight: number | null = null;
 
   // The scope the buffers currently on screen were filled for: property +
   // render path (see `renderPath`). Null means "nothing on screen", which is
@@ -190,6 +209,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       this.activeSiteIds = filters.activeSiteIds;
       this.activeTeamIds = filters.activeTeamIds;
       this.activeTagNames = filters.activeTagNames;
+      this.live.joinProperty(filters.propertyId);
     });
 
     // #1303: restore the signed-in user's saved property/calendars/workers/week
@@ -210,11 +230,76 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.loadTags();
     this.loadAllTeams();
     this.loadEforms();
+    this.wireLiveUpdates();
   }
 
   ngOnDestroy(): void {
+    this.liveReload.dispose();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /** Live updates (package 11c). Without a hub no hint arrives and the calendar behaves exactly as before. */
+  private wireLiveUpdates() {
+    this.live.hints$
+      .pipe(filter(hint => hint.propertyId === this.currentPropertyId), takeUntil(this.destroy$))
+      .subscribe(hint => this.onLiveHint(hint.reason));
+    this.dialog.afterAllClosed.pipe(takeUntil(this.destroy$)).subscribe(() => this.liveReload.settle());
+    // A drag or resize ends on mouseup/touchend; the debounce then gives the grid time to reset its state.
+    merge(fromEvent(document, 'mouseup'), fromEvent(document, 'touchend'))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.liveReload.settle());
+    // A hidden tab holds reloads back. Shown again: the owed reload runs, and a live calendar reloads once anyway,
+    // since a background tab can be frozen and miss hints.
+    fromEvent(document, 'visibilitychange').pipe(takeUntil(this.destroy$)).subscribe(() => {
+      if (document.hidden) {
+        return;
+      }
+      if (this.live.isLive) {
+        this.liveReload.request();
+      } else {
+        this.liveReload.settle();
+      }
+    });
+  }
+
+  private onLiveHint(reason: CalendarLiveHint['reason']) {
+    if (reason === 'joining') {
+      this.loadsAtJoin = this.loadsStarted;
+      return;
+    }
+    if (reason === 'joined') {
+      // Changes between our last load and the join were not hinted: reload unless a load started since.
+      const covered = this.loadsAtJoin !== this.loadsStarted;
+      this.loadsAtJoin = null;
+      if (covered) {
+        return;
+      }
+    }
+    this.liveReload.request();
+  }
+
+  /** True while a live reload would disturb the user; the reload is then owed (see `liveReload`). */
+  private isLiveReloadHeld(): boolean {
+    return this.createOverlayRef !== null
+      || this.previewOverlayRef !== null
+      || this.dialog.openDialogs.length > 0
+      || this.pendingWrites > 0
+      || this.loadInFlight !== null
+      || !!this.weekGrid?.isInteracting
+      || document.hidden;
+  }
+
+  private loadSettled(seq: number) {
+    if (this.loadInFlight === seq) {
+      this.loadInFlight = null;
+      this.liveReload.settle();
+    }
+  }
+
+  private writeSettled() {
+    this.pendingWrites--;
+    this.liveReload.settle();
   }
 
   private findFolderByName(folders: any[], nameFragment: string): any {
@@ -573,8 +658,16 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadTasks() {
+  /**
+   * `background`: a live reload (package 11c). It uses the request that does not toast, and on any failure it
+   * keeps what is on screen, since no user action asked for it. User loads are unchanged.
+   */
+  loadTasks(options: {background?: boolean} = {}) {
     if (!this.currentPropertyId) return;
+    const background = options.background === true;
+    // Any load reads everything a pending live reload would: that one is dropped.
+    this.liveReload.loadStarted();
+    this.loadsStarted++;
 
     // Scope change: the buffers on screen were filled for another property or
     // by the OTHER render path, and the template is already reading them —
@@ -597,12 +690,13 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
 
     // One ticket per user-visible load, shared by both paths below.
     const seq = ++this.loadSeq;
+    this.loadInFlight = seq;
 
     // Same expression as the scope key above — via `renderPath`, so the two
     // cannot drift apart and leave the month path loading while the week
     // buffers are the ones being kept.
     if (this.renderPath === 'month') {
-      this.loadMonthTasks(seq);
+      this.loadMonthTasks(seq, background);
       return;
     }
 
@@ -612,21 +706,28 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const weekStart = this.toLocalDateString(monday);
     const weekEnd = this.toLocalDateString(sunday);
 
-    this.calendarService
-      .getTasksForWeek({
-        propertyId: this.currentPropertyId,
-        weekStart,
-        weekEnd,
-        boardIds: this.activeBoardIds,
-        tagNames: this.activeTagNames,
-        siteIds: this.activeSiteIds,
-        workerTagIds: this.activeTeamIds,
-      })
+    const request = {
+      propertyId: this.currentPropertyId,
+      weekStart,
+      weekEnd,
+      boardIds: this.activeBoardIds,
+      tagNames: this.activeTagNames,
+      siteIds: this.activeSiteIds,
+      workerTagIds: this.activeTeamIds,
+    };
+    const tasks$ = background
+      ? this.calendarService.getTasksForWeekQuiet(request).pipe(catchError(() => of(null)))
+      : this.calendarService.getTasksForWeek(request);
+    tasks$
+      .pipe(finalize(() => this.loadSettled(seq)))
       .subscribe(res => {
         // Superseded while in flight — by another property, another week, or a
         // clearTasks(). Dropping it here also keeps the failure branch below
         // from clearing a grid that now belongs to a newer load.
         if (seq !== this.loadSeq) return;
+        if (background && (!res || !res.success)) {
+          return;
+        }
         if (!res || !res.success) {
           // getTasksForWeek toasts through notifyError(); drop what is on the
           // grid so the previous property/week's events are not left rendered
@@ -653,7 +754,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   // per weekday per call), so the month is fetched as six proper week
   // windows and merged client-side — bit-identical semantics with the week
   // view. A failed week degrades to an empty row instead of a blank month.
-  private loadMonthTasks(seq: number) {
+  private loadMonthTasks(seq: number, background: boolean) {
     const anchor = new Date(this.currentDate);
     const gridStart = this.getMondayOfWeek(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
     const calls = Array.from({length: 6}, (_, i) => {
@@ -661,21 +762,27 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       monday.setDate(gridStart.getDate() + i * 7);
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
-      return this.calendarService
-        .getTasksForWeek({
-          propertyId: this.currentPropertyId!,
-          weekStart: this.toLocalDateString(monday),
-          weekEnd: this.toLocalDateString(sunday),
-          boardIds: this.activeBoardIds,
-          tagNames: this.activeTagNames,
-          siteIds: this.activeSiteIds,
-          workerTagIds: this.activeTeamIds,
-        })
+      const request = {
+        propertyId: this.currentPropertyId!,
+        weekStart: this.toLocalDateString(monday),
+        weekEnd: this.toLocalDateString(sunday),
+        boardIds: this.activeBoardIds,
+        tagNames: this.activeTagNames,
+        siteIds: this.activeSiteIds,
+        workerTagIds: this.activeTeamIds,
+      };
+      return (background
+        ? this.calendarService.getTasksForWeekQuiet(request)
+        : this.calendarService.getTasksForWeek(request))
         .pipe(catchError(() => of(null)));
     });
 
-    forkJoin(calls).subscribe(results => {
+    forkJoin(calls).pipe(finalize(() => this.loadSettled(seq))).subscribe(results => {
       if (seq !== this.loadSeq) return;
+      // A background reload is all or nothing: one failed week keeps the month on screen.
+      if (background && results.some(res => !res || !res.success)) {
+        return;
+      }
       const teamNameById = this.teamNameMap();
       const boardColorMap = new Map(this.boards.map(b => [b.id, b.color]));
       const byDate = new Map<string, CalendarTaskLayoutModel[]>();
@@ -824,6 +931,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     this.createOverlayRef?.dispose();
     this.createOverlayRef = null;
     this.weekGrid?.clearSelection();
+    this.liveReload.settle();
   }
 
   onCreateBoard() {
@@ -1100,7 +1208,8 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
       // before emitting (so the drag does not flash), so skipping the reload
       // would leave it drawn at a position the server rejected. Same shape as
       // doResize() below, which always reloads.
-      obs.subscribe(() => this.loadTasks());
+      this.pendingWrites++;
+      obs.pipe(finalize(() => this.writeSettled())).subscribe(() => this.loadTasks());
     };
 
     if (isRepeating) {
@@ -1130,8 +1239,10 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
     const isRepeating = task && task.repeatRule && task.repeatRule !== 'none';
 
     const doResize = (scope: RepeatEditScope) => {
+      this.pendingWrites++;
       this.calendarService
         .resizeTask(event.taskId, event.newStartHour, event.newDuration, scope, event.originalDate)
+        .pipe(finalize(() => this.writeSettled()))
         .subscribe(() => this.loadTasks());
     };
 
@@ -1258,6 +1369,7 @@ export class CalendarContainerComponent implements OnInit, OnDestroy {
   private closePreviewOverlay() {
     this.previewOverlayRef?.dispose();
     this.previewOverlayRef = null;
+    this.liveReload.settle();
   }
 
   private openEditModal(event: {task: CalendarTaskLayoutModel; cellLeft: number; cellRight: number; slotTop: number}) {

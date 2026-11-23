@@ -102,4 +102,23 @@ describe('BackendConfigurationPnCalendarService', () => {
       expect(toastrSpy.success).not.toHaveBeenCalled();
     });
   });
+
+  // The calendar's live reload (package 11c) runs without a user action, so a failure must not toast.
+  describe('getTasksForWeekQuiet', () => {
+    const model = {propertyId: 1, weekStart: '2027-03-22', weekEnd: '2027-03-28', boardIds: [], tagNames: [], siteIds: [], workerTagIds: []};
+
+    it('posts the same request as getTasksForWeek', () => {
+      apiBaseServiceSpy.postNoToast.mockReturnValue(of({success: true, model: []}));
+      service.getTasksForWeekQuiet(model).subscribe();
+      expect(apiBaseServiceSpy.postNoToast).toHaveBeenCalledWith(BackendConfigurationPnCalendarMethods.TasksWeek, model);
+    });
+
+    it('does not toast a failed answer, unlike getTasksForWeek', () => {
+      apiBaseServiceSpy.postNoToast.mockReturnValue(of({success: false, message: 'down'}));
+      service.getTasksForWeekQuiet(model).subscribe();
+      expect(toastrSpy.error).not.toHaveBeenCalled();
+      service.getTasksForWeek(model).subscribe();
+      expect(toastrSpy.error).toHaveBeenCalledTimes(1);
+    });
+  });
 });
