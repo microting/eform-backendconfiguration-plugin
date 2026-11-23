@@ -176,8 +176,16 @@ public class LiveHubWireTests : TestBaseSetup
         Wire("server", close ?? "(no close message)");
         Assert.That(close, Is.EqualTo("""{"type":7}"""));
         var after = await client.NextRecordAsync();
-        Wire("then", after ?? $"websocket close: status={client.CloseStatus?.ToString() ?? "none (aborted)"} description='{client.CloseDescription}' state={client.State}");
-        Assert.That(after, Is.Null, "the socket closes after the Close message");
+        Wire("then", after ?? $"websocket close: frame={client.CloseFrameReceived} status={client.CloseStatus?.ToString() ?? "none"} description='{client.CloseDescription}' state={client.State} error={client.ReceiveError?.GetType().Name ?? "none"}");
+        // A clean close, not merely "the socket ended": a reset or abort (no close frame,
+        // a WebSocketException) must fail here.
+        Assert.Multiple(() =>
+        {
+            Assert.That(after, Is.Null, "the socket closes after the Close message");
+            Assert.That(client.ReceiveError, Is.Null, "no abort or reset");
+            Assert.That(client.CloseFrameReceived, Is.True, "the server sent a WebSocket close frame");
+            Assert.That(client.CloseStatus, Is.EqualTo(WebSocketCloseStatus.NormalClosure), "close code 1000");
+        });
     }
 
     // ------------------------------------------------------------------
@@ -296,6 +304,12 @@ public class LiveHubWireTests : TestBaseSetup
         public string? CloseDescription => _socket.CloseStatusDescription;
         public WebSocketState State => _socket.State;
 
+        /// <summary>True once a WebSocket close frame arrived (a clean close).</summary>
+        public bool CloseFrameReceived { get; private set; }
+
+        /// <summary>The exception that ended receiving, when the socket was reset or aborted instead of closed.</summary>
+        public WebSocketException? ReceiveError { get; private set; }
+
         public static async Task<RawHubClient> ConnectAsync(Uri uri)
         {
             var socket = new ClientWebSocket();
@@ -352,13 +366,19 @@ public class LiveHubWireTests : TestBaseSetup
                     {
                         result = await _socket.ReceiveAsync(buffer, timeout.Token);
                     }
-                    catch (WebSocketException)
+                    catch (WebSocketException e)
                     {
-                        // The server aborted the socket without a close handshake.
+                        // The socket was reset or aborted without a close handshake: recorded, so
+                        // a test that expects a clean close fails.
+                        ReceiveError = e;
                         return null;
                     }
 
-                    if (result.MessageType == WebSocketMessageType.Close) return null;
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        CloseFrameReceived = true;
+                        return null;
+                    }
                     message.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
                 } while (!result.EndOfMessage);
 
@@ -367,19 +387,25 @@ public class LiveHubWireTests : TestBaseSetup
             }
         }
 
+        /// <summary>Closes (bounded: a hub that stops answering cannot hang the fixture), then always disposes.</summary>
         public async ValueTask DisposeAsync()
         {
             try
             {
                 if (_socket.State == WebSocketState.Open)
-                    await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+                {
+                    using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                    await _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, deadline.Token);
+                }
             }
-            catch (WebSocketException)
+            catch (Exception e) when (e is WebSocketException or OperationCanceledException)
             {
-                // already gone
+                // Already gone, or the close handshake did not finish in time: dispose regardless.
             }
-
-            _socket.Dispose();
+            finally
+            {
+                _socket.Dispose();
+            }
         }
     }
 }
