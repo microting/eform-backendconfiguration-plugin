@@ -31,6 +31,7 @@ public class LiveFeedReaderTests : TestBaseSetup
     private LiveChangeTestHost _host = null!;
     private CommandCounter _commands = null!;
     private ThrowOnceOnWindowQuery _thrower = null!;
+    private BeforeWindowQuery _inject = null!;
     private LiveFeedOptions _options = null!;
     private LiveFeedReader _reader = null!;
     private static int _nextProperty = 7000;
@@ -40,8 +41,10 @@ public class LiveFeedReaderTests : TestBaseSetup
     {
         _commands = new CommandCounter();
         _thrower = new ThrowOnceOnWindowQuery();
+        _inject = new BeforeWindowQuery();
         _host = new LiveChangeTestHost(ConnectionStringFor("420_eform-backend-configuration-plugin"),
-            ConnectionStringFor("420_eform-angular-items-planning-plugin"), null, extraInterceptors: [_commands, _thrower]);
+            ConnectionStringFor("420_eform-angular-items-planning-plugin"), null,
+            extraInterceptors: [_commands, _thrower, _inject]);
         _options = new LiveFeedOptions { FirstRetentionDelay = TimeSpan.FromDays(1) };
         _reader = NewReader(_host, _options);
     }
@@ -278,6 +281,43 @@ public class LiveFeedReaderTests : TestBaseSetup
     }
 
     [Test]
+    public async Task ARowCommittedDuringTheFirstPoll_AboveItsLastId_IsStillForwarded()
+    {
+        // PR #1526 review: the row commits between GetLastIdAsync and the window read of the
+        // cursor-placing poll. Its id is above the new cursor: the next cursor read must forward it.
+        var p = NewProperty();
+        _inject.Arm(async () => await AppendAsync(FeedKinds.Changed, p, 1));
+
+        await PollAsync(); // places the cursor; the insert happens inside it
+        Assert.That(_inject.Fired, Is.True);
+
+        Assert.That(await PollAsync(), Is.EqualTo(new[] { new Call("TaskChanged", p, 1, null, null, TaskChangeKinds.Changed) }));
+        Assert.That(await PollAsync(), Is.Empty, "once");
+    }
+
+    [Test]
+    public async Task ARowCommittedDuringSkipAhead_BelowItsLastId_StillGetsAHint()
+    {
+        // PR #1526 review: during skip-ahead a lower-id row of another property commits after the
+        // routing read and before the coverage read. It must not be marked covered unhinted.
+        _options.MaxRowsPerTick = 2;
+        var a = NewProperty();
+        var b = NewProperty();
+        await PollAsync();
+        await AppendAsync(FeedKinds.Changed, a, 1);
+        var second = await AppendAsync(FeedKinds.Changed, a, 2);
+        await InsertRawAsync(FeedKinds.Changed, a, 3, id: second.Id + 10);
+        // The poll's first window-style read is skip-ahead's coverage read.
+        _inject.Arm(async () => await InsertRawAsync(FeedKinds.Changed, b, 4, id: second.Id + 5));
+
+        var calls = await PollAsync();
+        Assert.That(_inject.Fired, Is.True);
+        calls.AddRange(await PollAsync());
+
+        Assert.That(calls.Where(c => c.PropertyId == b), Is.Not.Empty, "the late row's property got a hint");
+    }
+
+    [Test]
     public async Task AThrowingContext_NeverEscapesTheTick()
     {
         _reader.ContextFor = _ => throw new InvalidOperationException("database down");
@@ -362,6 +402,26 @@ public class LiveFeedReaderTests : TestBaseSetup
         {
             if (DateTime.UtcNow > until) Assert.Fail("timed out waiting: " + what);
             await Task.Delay(50);
+        }
+    }
+
+    /// <summary>When armed, runs an action (an insert) once, right before the next window-style read (CreatedAt).</summary>
+    private sealed class BeforeWindowQuery : DbCommandInterceptor
+    {
+        private Func<Task>? _action;
+        public bool Fired { get; private set; }
+        public void Arm(Func<Task> action) => Interlocked.Exchange(ref _action, action);
+
+        public override async ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command,
+            CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.Contains("`CreatedAt` >=") && Interlocked.Exchange(ref _action, null) is { } action)
+            {
+                Fired = true;
+                await action();
+            }
+
+            return await base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
         }
     }
 

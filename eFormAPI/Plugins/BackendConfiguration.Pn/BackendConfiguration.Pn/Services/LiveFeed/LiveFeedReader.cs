@@ -180,8 +180,10 @@ public sealed class LiveFeedReader(
         {
             // No replay: connected clients resync on connect. Rows already in the window count as forwarded.
             var last = await TaskChangeFeed.GetLastIdAsync(db, cancellationToken).ConfigureAwait(false);
-            poll.Covered.UnionWith(await TaskChangeFeed.ReadIdsSinceAsync(db, windowStart, cancellationToken)
-                .ConfigureAwait(false));
+            // Only ids up to the new cursor: a row committed after GetLastIdAsync (id above it) must
+            // stay for the next cursor read.
+            poll.Covered.UnionWith((await TaskChangeFeed.ReadIdsSinceAsync(db, windowStart, cancellationToken)
+                .ConfigureAwait(false)).Where(id => id <= last));
             poll.Cursor = last;
             Commit(poll, now);
             return 0;
@@ -247,6 +249,10 @@ public sealed class LiveFeedReader(
         var from = poll.Cursor!.Value;
         var last = await TaskChangeFeed.GetLastIdAsync(db, cancellationToken).ConfigureAwait(false);
         if (last <= from) return;
+        // Coverage BEFORE the routing read: every covered row is then also in the routing read (it was
+        // visible earlier), and a row that commits in between stays eligible for the late-row window.
+        var covered = (await TaskChangeFeed.ReadIdsSinceAsync(db, windowStart, cancellationToken).ConfigureAwait(false))
+            .Where(id => id > from && id <= last).ToList();
         var skipped = await db.TaskChangeFeedEntries.AsNoTracking()
             .Where(e => e.Id > from && e.Id <= last)
             .Select(e => new { e.PropertyId, e.SdkSiteId, e.Kind })
@@ -263,10 +269,7 @@ public sealed class LiveFeedReader(
             last - from, properties.Count, sites.Count);
         poll.Cursor = last;
         // The skipped rows are covered: the window must not forward them one by one.
-        foreach (var id in await TaskChangeFeed.ReadIdsSinceAsync(db, windowStart, cancellationToken).ConfigureAwait(false))
-        {
-            if (id > from && id <= last) poll.Covered.Add(id);
-        }
+        poll.Covered.UnionWith(covered);
     }
 
     /// <summary>
