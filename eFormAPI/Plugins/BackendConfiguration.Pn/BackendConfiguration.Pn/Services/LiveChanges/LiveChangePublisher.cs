@@ -66,6 +66,12 @@ public sealed class LiveChangePublisher(
                     case { Kind: LiveChangeKind.RevokeSite, SdkSiteId: { } sdkSite }:
                         Track(notifier.RevokeSiteAsync(sdkSite));
                         continue;
+                    case { Kind: LiveChangeKind.RevokePropertyForEveryone, PropertyId: { } removedProperty }:
+                        Track(notifier.RevokePropertyForEveryoneAsync(removedProperty));
+                        continue;
+                    case { Kind: LiveChangeKind.RevokeUser, UserId: { } user }:
+                        Track(notifier.RevokeUserAsync(user));
+                        continue;
                 }
             }
             catch (Exception e)

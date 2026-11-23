@@ -48,8 +48,20 @@ The source of truth is `BackendConfiguration.Pn/Hubs/LiveHubContract.cs`. This n
   - `revoked`: the server ended the connection because the worker or site was removed or
     resigned. Reconnect once; the connect checks then decide.
 - After `Refused`, a client must stop its automatic reconnect and act on the code.
-- On connect, a worker joins its own site group automatically. A web user who is not a worker
-  (SDK site 0) connects, but joins no group, and every `JoinProperty` call is refused.
+- **Two caller kinds** (package 11b). Both get the same token, expiry, connection-cap and refusal
+  rules.
+  - A **worker** (the user resolves to an SDK site, as for the gRPC calls) joins its own site
+    group automatically on connect.
+  - A **web user** (signed in and active, but not a worker: SDK site 0) connects as a "web"
+    connection in **no site group**. It never receives `AssignmentsChanged`, and every
+    `JoinProperty` call is refused (as for an unassigned caller). It subscribes with
+    `JoinCalendarProperty` instead.
+- **Wire details**, observed end to end with the real host JwtBearer handler and a raw
+  WebSocket client (`LiveHubWireTests`):
+  - The client may skip the negotiate step: it opens `ws(s)://<origin>/hub/backend-configuration?access_token=...`
+    directly. The upgrade answers HTTP 101, even for a missing, garbage or expired token.
+  - The handshake reply `{}` comes first, and then a refusal: `Refused`, then SignalR's Close
+    message `{"type":7}`, then a WebSocket close (1000, normal closure).
 
 ## Client → server
 
@@ -57,6 +69,8 @@ The source of truth is `BackendConfiguration.Pn/Hubs/LiveHubContract.cs`. This n
 |---|---|---|
 | `JoinProperty` | `propertyId` (string, as `Property.id` on the gRPC wire) | A result object, `{"v":1,"code":"ok"}` or `{"v":1,"code":"<refusal>"}` |
 | `LeaveProperty` | `propertyId` | No result. Always completes, and is idempotent. |
+| `JoinCalendarProperty` | `propertyId` | Same result object and codes as `JoinProperty` (web calendar, package 11b) |
+| `LeaveCalendarProperty` | `propertyId` | No result. Always completes, and is idempotent. |
 
 - **`JoinProperty` refusal codes:** `property_not_available`, `too_many_properties`,
   `account_disabled` and `not_authenticated`.
@@ -78,14 +92,51 @@ The source of truth is `BackendConfiguration.Pn/Hubs/LiveHubContract.cs`. This n
     `account_disabled` (or `not_authenticated`) **and the server ends the connection**: `Refused`
     with the same code, then close. The connection stops receiving hints for the groups it
     had joined.
-- **Remaining exposure.** A user deactivated outside this plugin (the host's user admin sets
-  `EformUser.IsActive = false` and does not tell the hub) keeps receiving ids-only hints for the
-  groups it already joined until its token expires (at most 24 h + 5 min), it reconnects, or it
-  calls `JoinProperty` again. Deactivation through this plugin (resign, delete) ends the
-  connection at once.
+- **Remaining exposure, for workers and web users alike.** A user deactivated outside this
+  plugin (the host's user admin sets `EformUser.IsActive = false` and does not tell the hub)
+  keeps receiving ids-only hints for the groups it already joined until any of these happens:
+  - its token expires (at most 24 h + 5 min);
+  - it reconnects;
+  - it calls `JoinProperty` or `JoinCalendarProperty` again.
+- Deactivation through this plugin ends the connection at once:
+  - resigning a worker ends its site's connections **and** its login's connections by user id,
+    so a web connection of the same login ends too;
+  - deleting a worker ends its site's connections.
 - A connection may hold at most 200 property groups.
 - Once the token has expired (`exp` + ClockSkew), `JoinProperty` answers `not_authenticated`
   and the server closes the connection.
+
+### `JoinCalendarProperty` (web calendar, package 11b)
+
+**Who may join what.** This is the calendar's own rule, a product decision:
+`CalendarController` carries only `[Authorize]`, so any signed-in, active user may load any
+property's calendar.
+- The same user, worker or web user, may subscribe to that property's hints: any **existing,
+  non-removed** property, with no assignment needed.
+- The property group is the **same** group `JoinProperty` joins and the publishers send to, so
+  a calendar member receives exactly the `TaskChanged` hints a worker receives.
+- Refusals use the same uniform `property_not_available` for a removed, non-existent or
+  malformed id, so ids cannot be probed.
+- Every join runs the same checks as `JoinProperty`:
+  - expiry;
+  - the caller is resolved again, so a disabled account answers `account_disabled` and the
+    connection ends;
+  - the 200-group cap;
+  - the revoke race guard.
+- **`JoinProperty` is not widened.** A worker still needs the assignment there.
+
+**One membership per (connection, property group).** It does not matter which method joined it.
+- `LeaveProperty` and `LeaveCalendarProperty` both end it.
+- A worker's unassignment (`RevokePropertyAccess`) also ends a membership that worker holds
+  through `JoinCalendarProperty`. A calendar client may simply join again, because the calendar
+  rule allows it.
+
+**No capability string.** `GetServerInfo` does not list one for this method, because the
+contract test pins the capability list. The Angular calendar ships with the plugin (same
+version), and the mobile app does not use this method.
+
+**Security note.** Any signed-in, active web user can learn **that** something changed on any
+property id (ids only, never data), as they can already load that property's calendar.
 
 ## Server → client
 
@@ -228,6 +279,10 @@ The hub does not use SignalR groups.
   property group.
 - `RevokeSiteAsync(sdkSiteId)`: ends every connection of the site (taken out of every group,
   `Refused revoked`, close).
+- `RevokePropertyForEveryoneAsync(propertyId)`: takes every connection, worker or web user, out
+  of the property group. The connections stay open.
+- `RevokeUserAsync(userId)`: ends every connection of the host user (`EformUser.Id`), whatever
+  its site (`Refused revoked`, close).
 
 Call them after the change has been committed.
 
@@ -238,6 +293,6 @@ for access it has lost.
 | Path | Call |
 |---|---|
 | A worker is unassigned from a property (PropertyWorker removed) | `RevokePropertyAccessAsync(site, property)`, then `AssignmentsChangedAsync(site)` |
-| A property is deleted | `RevokePropertyAccessAsync(site, property)` for every site assigned to it |
+| A property is deleted | `RevokePropertyAccessAsync(site, property)` for every site assigned to it, **and** `RevokePropertyForEveryoneAsync(property)` (web members have no PropertyWorker row). The interceptor does both: the PropertyWorker rows and the Property row are watched. |
 | A worker or its site is removed | `RevokeSiteAsync(site)` |
-| A worker resigns, or `EformUser.IsActive` is set to false | `RevokeSiteAsync(site)` |
+| A worker resigns, or `EformUser.IsActive` is set to false | `RevokeSiteAsync(site)`, and `RevokeUserAsync(login)` where the plugin writes `IsActive = false` (resign) |

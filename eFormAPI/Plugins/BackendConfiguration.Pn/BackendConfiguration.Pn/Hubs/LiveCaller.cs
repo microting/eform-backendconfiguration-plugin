@@ -4,7 +4,10 @@ using BackendConfiguration.Pn.Services.GrpcServices;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Grpc.Core;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microting.eForm.Infrastructure.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Hubs;
 
@@ -60,13 +63,37 @@ public class LiveCallerResolver(IUserService userService, IGrpcSiteResolver site
 }
 
 /// <summary>
-/// Who may join a property's group. A seam: today only workers
-/// (<see cref="WorkerLivePropertyAccess"/>); the web calendar (package 11)
-/// adds the rule its REST endpoints use for non-worker web users.
+/// Who may join a property's group through <c>JoinProperty</c>: the workers'
+/// rule (<see cref="WorkerLivePropertyAccess"/>). The web calendar's rule is
+/// <see cref="ILiveCalendarPropertyAccess"/>, behind its own method.
 /// </summary>
 public interface ILivePropertyAccess
 {
     Task<bool> CanJoinPropertyAsync(LiveCaller caller, int propertyId);
+}
+
+/// <summary>
+/// Who may subscribe to a property through <c>JoinCalendarProperty</c> (package
+/// 11b, the web calendar). Separate from <see cref="ILivePropertyAccess"/>,
+/// which stays the workers' rule for <c>JoinProperty</c>.
+/// </summary>
+public interface ILiveCalendarPropertyAccess
+{
+    Task<bool> CanJoinCalendarPropertyAsync(LiveCaller caller, int propertyId);
+}
+
+/// <summary>
+/// The calendar's own rule (product decision): <c>CalendarController</c> carries
+/// only <c>[Authorize]</c>, so any signed-in, active user may load any
+/// property's calendar; the same user may subscribe to that property's hints
+/// (ids only). The property must exist and not be removed. "Active" is
+/// enforced before this is asked: the hub resolves the caller on every join,
+/// and the resolver refuses a disabled account or a resigned worker.
+/// </summary>
+public class CalendarLivePropertyAccess(BackendConfigurationPnDbContext db) : ILiveCalendarPropertyAccess
+{
+    public Task<bool> CanJoinCalendarPropertyAsync(LiveCaller caller, int propertyId) =>
+        db.Properties.AnyAsync(p => p.Id == propertyId && p.WorkflowState != Constants.WorkflowStates.Removed);
 }
 
 /// <summary>

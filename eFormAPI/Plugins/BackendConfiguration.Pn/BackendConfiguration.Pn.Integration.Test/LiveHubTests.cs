@@ -94,7 +94,7 @@ public class LiveHubTests : TestBaseSetup
         _context = new FakeCallerContext(headerUser ?? new ClaimsPrincipal(new ClaimsIdentity()), http, connectionId);
         access ??= new WorkerLivePropertyAccess(new BackendConfigurationUserPropertyAccess(BackendConfigurationPnDbContext!));
         var hub = new BackendConfigurationHub(_authenticator, new LiveCallerResolver(_users, _sites), access, _registry,
-            Substitute.For<ILogger<BackendConfigurationHub>>())
+            Substitute.For<ILogger<BackendConfigurationHub>>(), Substitute.For<ILiveCalendarPropertyAccess>())
         {
             Context = _context,
             Groups = groups,

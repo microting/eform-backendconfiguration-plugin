@@ -14,8 +14,11 @@ namespace BackendConfiguration.Pn.Hubs;
 /// <list type="bullet">
 /// <item>a removed property assignment (<see cref="Revoke"/>) takes the
 /// site's connections out of that property's group;</item>
-/// <item>a removed or resigned worker (<see cref="TakeSite"/>) and an expired
-/// token (<see cref="TakeExpired"/>) end the connection.</item>
+/// <item>a removed property (<see cref="RevokePropertyForEveryone"/>) takes
+/// every connection out of its group;</item>
+/// <item>a removed or resigned worker (<see cref="TakeSite"/>), a deactivated
+/// login (<see cref="TakeUser"/>) and an expired token
+/// (<see cref="TakeExpired"/>) end the connection.</item>
 /// </list>
 /// It also caps the connections per user (<see cref="TryConnect"/>).
 /// Kanban's <c>HubConnectionRegistry</c> pattern.
@@ -29,6 +32,7 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
     private readonly object _gate = new();
     private readonly Dictionary<string, Connection> _connections = new();
     private readonly Dictionary<(int SdkSiteId, int PropertyId), long> _revocations = new();
+    private readonly Dictionary<int, long> _propertyRevocations = new();
 
     private sealed class Connection(int userId, DateTimeOffset expiresAt, Action abort)
     {
@@ -151,8 +155,10 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
     /// </summary>
     public long RevocationCount(int sdkSiteId, int propertyId)
     {
+        // A revoke of the property for everyone counts for every site (and for web users, site 0).
         lock (_gate)
-            return _revocations.GetValueOrDefault((sdkSiteId, propertyId));
+            return _revocations.GetValueOrDefault((sdkSiteId, propertyId))
+                   + _propertyRevocations.GetValueOrDefault(propertyId);
     }
 
     /// <summary>
@@ -172,6 +178,28 @@ public class LiveConnectionRegistry(TimeProvider timeProvider)
         }
         return taken;
     }
+
+    /// <summary>
+    /// Marks the property as revoked for everyone (it was removed) and takes,
+    /// atomically, every connection out of <paramref name="group"/>: workers
+    /// and web users alike (web members have no PropertyWorker row to revoke
+    /// by). Returns their ids; the connections stay open.
+    /// </summary>
+    public IReadOnlyList<string> RevokePropertyForEveryone(int propertyId, string group)
+    {
+        var taken = new List<string>();
+        lock (_gate)
+        {
+            _propertyRevocations[propertyId] = _propertyRevocations.GetValueOrDefault(propertyId) + 1;
+            foreach (var (id, c) in _connections)
+                if (c.Groups.Remove(group))
+                    taken.Add(id);
+        }
+        return taken;
+    }
+
+    /// <summary>Removes and returns every connection of the user (whatever its site).</summary>
+    public IReadOnlyList<Taken> TakeUser(int userId) => TakeWhere(c => c.UserId == userId);
 
     /// <summary>Removes and returns every connection of the site (sites &gt; 0 only).</summary>
     public IReadOnlyList<Taken> TakeSite(int sdkSiteId) =>

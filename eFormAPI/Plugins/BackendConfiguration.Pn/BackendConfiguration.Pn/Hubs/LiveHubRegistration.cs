@@ -35,6 +35,7 @@ public static class LiveHubRegistration
         services.TryAddSingleton<ILiveNotifier, LiveNotifier>();
         services.TryAddTransient<ILiveCallerResolver, LiveCallerResolver>();
         services.TryAddTransient<ILivePropertyAccess, WorkerLivePropertyAccess>();
+        services.TryAddTransient<ILiveCalendarPropertyAccess, CalendarLivePropertyAccess>();
         return services;
     }
 

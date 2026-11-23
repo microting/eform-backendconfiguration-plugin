@@ -895,7 +895,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             LederCaller? lederCaller = null,
             // Live updates: called with the SDK Sites.Id once the worker row (resignation, tags)
             // has been saved, whatever this method then returns.
-            Action<int>? workerSaved = null)
+            Action<int>? workerSaved = null,
+            // Live updates: called with the login's EformUser.Id once IsActive = false has been
+            // written for it (a resignation), so connections of that login without a site end too.
+            Action<int>? loginDeactivated = null)
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -1175,6 +1178,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 .Where(x => x.Id == existingLogin.Id)
                                 .ExecuteUpdateAsync(x => x.SetProperty(u => u.IsActive, isActive))
                                 .ConfigureAwait(false);
+                            if (!isActive) loginDeactivated?.Invoke(existingLogin.Id);
                             logger.LogWarning(
                                 "[UpdateDeviceUser] wrote IsActive={IsActive} on {Email} while skipping the rest of its login work",
                                 isActive, oldEmail);
@@ -1217,6 +1221,8 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                                 await baseDbContext.Entry(user).ReloadAsync().ConfigureAwait(false);
                                 return new OperationDataResult<int>(false, EmailRefusalErrorKey(result, DeviceUserCouldNotBeUpdatedKey));
                             }
+
+                            if (!user.IsActive) loginDeactivated?.Invoke(user.Id);
                         }
                         else
                         {
