@@ -74,6 +74,15 @@ The source of truth is `BackendConfiguration.Pn/Hubs/LiveHubContract.cs`. This n
   SDK site (`IBackendConfigurationUserPropertyAccess.HasAccessAsync`).
 - The caller is resolved again on every join, so a worker who resigned after connecting is
   refused.
+  - When that check finds the account disabled, resigned or gone, the join answers
+    `account_disabled` (or `not_authenticated`) **and the server ends the connection**: `Refused`
+    with the same code, then close. The connection stops receiving hints for the groups it
+    had joined.
+- **Remaining exposure.** A user deactivated outside this plugin (the host's user admin sets
+  `EformUser.IsActive = false` and does not tell the hub) keeps receiving ids-only hints for the
+  groups it already joined until its token expires (at most 24 h + 5 min), it reconnects, or it
+  calls `JoinProperty` again. Deactivation through this plugin (resign, delete) ends the
+  connection at once.
 - A connection may hold at most 200 property groups.
 - Once the token has expired (`exp` + ClockSkew), `JoinProperty` answers `not_authenticated`
   and the server closes the connection.

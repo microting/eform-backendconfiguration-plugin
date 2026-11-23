@@ -102,6 +102,7 @@ using Services.AreaRulePlanningTagPurgeService;
 using Services.SecurityGroupBackfillService;
 using Services.Leder;
 using Services.PluginMenuSyncService;
+using Services.LiveChanges;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -126,6 +127,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddGrpc();
         // Live-update hints (package 10): SignalR hub + ILiveNotifier.
         services.AddBackendConfigurationLiveHub();
+        // ... and their publishers: SaveChanges interceptors + the scoped collector (Services/LiveChanges).
+        services.AddBackendConfigurationLiveChanges();
         services.AddTransient<Services.UserPropertyAccess.IBackendConfigurationUserPropertyAccess,
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,
@@ -860,21 +863,23 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             "eform-angular-case-template-plugin");
 
         _connectionString = connectionString;
-        services.AddDbContextPool<BackendConfigurationPnDbContext>(o =>
+        // Still pooled, same options; the (sp, o) overload only adds the live-change
+        // interceptors (singletons, so safe on pooled contexts whose options are built once).
+        services.AddDbContextPool<BackendConfigurationPnDbContext>((sp, o) =>
             o.UseMySql(connectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(connectionString)), mySqlOptionsAction: builder =>
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
-            }));
+            }).AddLiveChangeInterceptors(sp));
 
-        services.AddDbContextPool<ItemsPlanningPnDbContext>(o =>
+        services.AddDbContextPool<ItemsPlanningPnDbContext>((sp, o) =>
             o.UseMySql(itemsPlannigConnectionString, new MariaDbServerVersion(
                 ServerVersion.AutoDetect(itemsPlannigConnectionString)), mySqlOptionsAction: builder =>
             {
                 builder.EnableRetryOnFailure();
                 builder.MigrationsAssembly(PluginAssembly().FullName);
-            }));
+            }).AddLiveChangeInterceptors(sp));
 
         services.AddDbContextPool<TimePlanningPnDbContext>(o =>
             o.UseMySql(timeRegistrationConnectionString, new MariaDbServerVersion(
@@ -944,6 +949,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         }
 
         using var scope = serviceProvider.CreateScope();
+        // The startup repairs run without a request: batch their live changes and send them once below.
+        using var startupLiveChanges = LiveChangeScope.Begin(scope.ServiceProvider);
         var backfillService = scope.ServiceProvider.GetRequiredService<WorkorderCaseGroupIdBackfillService>();
         backfillService.RunIfNeededAsync().GetAwaiter().GetResult();
 

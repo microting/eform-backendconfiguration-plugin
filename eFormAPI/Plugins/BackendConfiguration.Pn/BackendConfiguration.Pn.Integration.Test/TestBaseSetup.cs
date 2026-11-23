@@ -65,6 +65,13 @@ public abstract class TestBaseSetup
         return context;
     }
 
+    /// <summary>
+    /// The root connection string of one database on the test container, for a
+    /// fixture that registers its own (e.g. pooled, intercepted) contexts.
+    /// </summary>
+    protected string ConnectionStringFor(string databaseName) =>
+        _connectionStr.Replace("myDb", databaseName).Replace("bla", "root");
+
     /// <summary>A second, independent Angular base context on the same database, as a separate request has.</summary>
     protected BaseDbContext CreateFreshBaseDbContext()
     {

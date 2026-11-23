@@ -14,6 +14,7 @@ using BackendConfiguration.Pn.Infrastructure.Models.Calendar;
 using BackendConfiguration.Pn.Services.BackendConfigurationCalendarService;
 using BackendConfiguration.Pn.Services.BackendConfigurationPropertiesService;
 using BackendConfiguration.Pn.Services.EventDeployService;
+using BackendConfiguration.Pn.Services.LiveChanges;
 using BackendConfiguration.Pn.Services.PastOccurrenceCatchUp;
 using BackendConfiguration.Pn.Services.UserPropertyAccess;
 using Google.Protobuf;
@@ -117,7 +118,9 @@ public partial class EventsGrpcService(
     IEventDeployService eventDeployService,
     ILogger<EventsGrpcService> logger,
     // Optional so fixtures that build this class directly need not supply it; DI always does.
-    IPastOccurrenceCatchUpService? pastOccurrenceCatchUpService = null)
+    IPastOccurrenceCatchUpService? pastOccurrenceCatchUpService = null,
+    // Live-update hints for the SDK-only writes (package 10); optional for the same reason.
+    ILiveChanges liveChanges = null)
     : Events.EventsBase
 {
     public override async Task<ListPropertiesResponse> ListProperties(
@@ -2965,6 +2968,7 @@ public partial class EventsGrpcService(
                 .ConfigureAwait(false);
         }
 
+        if (!replayed) AnnounceSdkWrite(arp.PropertyId, eventId, compliance.Id, evt);
         return new SetCommentResponse { Event = evt, Replayed = replayed };
     }
 
@@ -3445,6 +3449,7 @@ public partial class EventsGrpcService(
             {
                 var stored = await PutUploadAsync().ConfigureAwait(false);
                 await AttachUploadAsync(stored, string.Empty).ConfigureAwait(false);
+                AnnounceSdkWrite(arp.PropertyId, eventId, compliance.Id, null);
 
                 // 8. Echo the new UploadedData id as the storage_id so the
                 // client can address subsequent reads / removes.
@@ -3496,6 +3501,7 @@ public partial class EventsGrpcService(
                 return (preparedId, false);
             }).ConfigureAwait(false);
 
+            if (!replayed) AnnounceSdkWrite(arp.PropertyId, eventId, compliance.Id, null);
             return new UploadPhotoResponse { StorageId = storageId, Replayed = replayed };
         }
         finally
@@ -3613,8 +3619,11 @@ public partial class EventsGrpcService(
         if (IsContractRemove(request))
         {
             // contract_version 1: request_id and/or expected_storage_id.
-            return await RemovePhotoWithContractAsync(request, compliance.Id, sdkDbContext, foundCase)
+            var contractReply = await RemovePhotoWithContractAsync(request, compliance.Id, sdkDbContext, foundCase)
                 .ConfigureAwait(false);
+            if (contractReply is { Replayed: false, Outcome: RemovePhotoOutcome.Removed })
+                AnnounceSdkWrite(arp.PropertyId, eventId, compliance.Id, null);
+            return contractReply;
         }
 
         var envelope = TryParseEnvelope(foundCase.Custom);
@@ -3644,6 +3653,7 @@ public partial class EventsGrpcService(
         envelope.EventPhotos.Remove(photo);
         foundCase.Custom = SerializeEnvelopeOrEmpty(envelope);
         await foundCase.Update(sdkDbContext).ConfigureAwait(false);
+        AnnounceSdkWrite(arp.PropertyId, eventId, compliance.Id, null);
 
         return new RemovePhotoResponse();
     }
@@ -4039,6 +4049,7 @@ public partial class EventsGrpcService(
         var (evt, _) = await BuildSetFieldValueEchoAsync(
                 arp.PropertyId, eventId, dayKey, sdkSiteId, context.CancellationToken)
             .ConfigureAwait(false);
+        AnnounceSdkWrite(arp.PropertyId, eventId, compliance.Id, evt);
 
         return new SetFieldValueResponse { Event = evt };
     }
@@ -4147,7 +4158,31 @@ public partial class EventsGrpcService(
         evt.ComplianceId = compliance.Id;
         evt.MicrotingSdkCaseId = compliance.MicrotingSdkCaseId;
         await StampWriteReplyAsync(evt, compliance.Id, compliance.MicrotingSdkCaseId, task).ConfigureAwait(false);
+        if (!replayed) AnnounceSdkWrite(propertyId, eventId, compliance.Id, evt);
         return new SetFieldValueResponse { Event = evt, Replayed = replayed };
+    }
+
+    /// <summary>
+    /// Live-update hint for a write that touched SDK tables only (the
+    /// interceptor cannot see those): after the write succeeded, never for a
+    /// replay. The key is the one the reply carries when it names this
+    /// occurrence; otherwise event + compliance. In-memory and never throws,
+    /// so the reply and the error behaviour are unchanged.
+    /// </summary>
+    private void AnnounceSdkWrite(int propertyId, int eventId, int complianceId, Event reply)
+    {
+        if (liveChanges == null) return;
+        DateOnly? planDay = null;
+        if (reply != null
+            && reply.Id == eventId.ToString(CultureInfo.InvariantCulture)
+            && (reply.ComplianceId == 0 || reply.ComplianceId == complianceId)
+            && DateOnly.TryParseExact(reply.PlanDayKey, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var day))
+        {
+            planDay = day;
+        }
+
+        liveChanges.TaskChanged(propertyId, eventId, planDay, complianceId > 0 ? complianceId : null);
     }
 
     private static int ParseEventId(string raw)

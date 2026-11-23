@@ -65,7 +65,9 @@ public class BackendConfigurationAssignmentWorkerService(
     Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService reconciliationService,
     ILederService leder,
     // #1384 — optional so the fixtures that build this by hand keep working.
-    Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null)
+    Services.TaskTranslation.ITaskTranslationFiller taskTranslationFiller = null,
+    // Live-update hints (package 10); optional for the same reason.
+    Services.LiveChanges.ILiveChanges liveChanges = null)
     : IBackendConfigurationAssignmentWorkerService
 {
     // How long the workers list waits for Microting's unit versions; a slower refresh
@@ -451,6 +453,9 @@ public class BackendConfigurationAssignmentWorkerService(
                     logger.LogError(siteDeleteEx, "Delete: core.SiteDelete failed for site MicrotingUid {Uid}", site.MicrotingUid);
                 }
             }
+
+            // The worker is gone: end its live connections (deviceUserId is the SDK Sites.Id).
+            liveChanges?.RevokeSite(deviceUserId);
 
             return new OperationResult(true,
                 backendConfigurationLocalizationService.GetString("SuccessfullyDeleteAssignmentsProperties"));
@@ -1021,10 +1026,21 @@ public class BackendConfigurationAssignmentWorkerService(
     public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
+        // Live updates follow the SAVED worker row, not the result: the helper calls back right
+        // after the worker (resignation, tags) is stored, and a later step such as the login
+        // update can still fail. A resigned worker's connections end at once, by SDK site id
+        // (no lookup that could fail); other edits tell its devices to resync (worker tags).
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, userService, userManager, backendConfigurationPnDbContext,
             timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService,
-            taskTranslationFiller, await LederCallerAsync().ConfigureAwait(false));
+            taskTranslationFiller, await LederCallerAsync().ConfigureAwait(false),
+            workerSaved: siteId =>
+            {
+                if (deviceUserModel.Resigned)
+                    liveChanges?.RevokeSite(siteId);
+                else
+                    liveChanges?.AssignmentsChanged(siteId);
+            });
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
@@ -1064,6 +1080,12 @@ public class BackendConfigurationAssignmentWorkerService(
         var core = await coreHelper.GetCore().ConfigureAwait(false);
         var result = await WorkerTagsBulkUpdateHelper.BulkUpdate(model, core.DbContextHelper.GetDbContext(),
             reconciliationService, logger).ConfigureAwait(false);
+
+        if (result.Success && liveChanges != null)
+        {
+            foreach (var siteId in (model.SiteIds ?? []).Distinct())
+                liveChanges.AssignmentsChanged(siteId);
+        }
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }
