@@ -410,6 +410,33 @@ public class LiveChangeGrpcTests : TestBaseSetup
     }
 
     [Test]
+    public async Task ResizingATaskForAll_WhichWritesOnlyItsCalendarConfiguration_IsAnnounced()
+    {
+        // PR #1525 review: ResizeTask scope "all" with no occurrence exceptions writes
+        // CalendarConfiguration only.
+        var w = await SeedWorldAsync();
+        var today = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc);
+        var series = await SeedDailySeriesAsync(w, today.AddDays(-3));
+        using var host = NewHost(w);
+
+        var calls = await host.InRequestAsync(async sp =>
+        {
+            var calendar = NewCalendar(w, sp.GetRequiredService<BackendConfigurationPnDbContext>(),
+                sp.GetRequiredService<ItemsPlanningPnDbContext>());
+            var result = await calendar.ResizeTask(new BackendConfiguration.Pn.Infrastructure.Models.Calendar.CalendarTaskResizeRequestModel
+            {
+                Id = series.ArpId, NewStartHour = 11, NewDuration = 2, Scope = "all"
+            });
+            Assert.That(result.Success, Is.True, result.Message);
+        });
+
+        Assert.That(calls, Is.EqualTo(new[]
+        {
+            new RecordingLiveNotifier.Call("TaskChanged", w.PropertyId, series.ArpId, null, null, TaskChangeKinds.Changed)
+        }));
+    }
+
+    [Test]
     public async Task GetEvent_SendsNoHint()
     {
         var w = await SeedWorldAsync();

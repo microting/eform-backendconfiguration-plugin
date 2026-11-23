@@ -28,7 +28,6 @@ public enum LiveChangeKind
 ///   <item><see cref="EventId"/> without <see cref="PropertyId"/>: the property of that AreaRulePlanning.</item>
 ///   <item><see cref="ItemPlanningId"/> without <see cref="EventId"/>: every AreaRulePlanning on that planning
 ///     (and, when <see cref="PropertyId"/> is set, only those of that property).</item>
-///   <item><see cref="SiteMicrotingUid"/> without <see cref="SdkSiteId"/>: the SDK site with that uid.</item>
 /// </list>
 /// A <see cref="LiveChangeKind.Task"/> change with only <see cref="PropertyId"/> asks for a
 /// property-wide hint (<see cref="TaskChangeKinds.Property"/>).
@@ -41,8 +40,7 @@ public readonly record struct LiveChange(
     DateOnly? PlanDay = null,
     long? ComplianceId = null,
     string TaskKind = TaskChangeKinds.Changed,
-    int? SdkSiteId = null,
-    int? SiteMicrotingUid = null)
+    int? SdkSiteId = null)
 {
     public static LiveChange ForTask(int propertyId, int? eventId = null, DateOnly? planDay = null,
         long? complianceId = null, string kind = TaskChangeKinds.Changed) =>
@@ -64,16 +62,10 @@ public readonly record struct LiveChange(
 
     public static LiveChange ForAssignments(int sdkSiteId) => new(LiveChangeKind.Assignments, SdkSiteId: sdkSiteId);
 
-    public static LiveChange ForAssignmentsOfSiteUid(int siteMicrotingUid) =>
-        new(LiveChangeKind.Assignments, SiteMicrotingUid: siteMicrotingUid);
-
     public static LiveChange ForRevokeProperty(int sdkSiteId, int propertyId) =>
         new(LiveChangeKind.RevokeProperty, PropertyId: propertyId, SdkSiteId: sdkSiteId);
 
     public static LiveChange ForRevokeSite(int sdkSiteId) => new(LiveChangeKind.RevokeSite, SdkSiteId: sdkSiteId);
-
-    public static LiveChange ForRevokeSiteUid(int siteMicrotingUid) =>
-        new(LiveChangeKind.RevokeSite, SiteMicrotingUid: siteMicrotingUid);
 }
 
 /// <summary>Tuning of the coalescing in <see cref="LiveChangePublisher"/>.</summary>

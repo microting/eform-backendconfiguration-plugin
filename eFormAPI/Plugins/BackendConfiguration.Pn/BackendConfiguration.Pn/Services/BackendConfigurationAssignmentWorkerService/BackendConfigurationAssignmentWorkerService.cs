@@ -1026,20 +1026,21 @@ public class BackendConfigurationAssignmentWorkerService(
     public async Task<OperationResult> UpdateDeviceUser(DeviceUserModel deviceUserModel)
     {
         var core = await coreHelper.GetCore().ConfigureAwait(false);
+        // Live updates follow the SAVED worker row, not the result: the helper calls back right
+        // after the worker (resignation, tags) is stored, and a later step such as the login
+        // update can still fail. A resigned worker's connections end at once, by SDK site id
+        // (no lookup that could fail); other edits tell its devices to resync (worker tags).
         var result = await BackendConfigurationAssignmentWorkerServiceHelper.UpdateDeviceUser(deviceUserModel, core,
             userService.UserId, userService, userManager, backendConfigurationPnDbContext,
             timePlanningDbContext, baseDbContext, logger, itemsPlanningPnDbContext, reconciliationService,
-            taskTranslationFiller, await LederCallerAsync().ConfigureAwait(false));
-
-        if (result.Success && liveChanges != null && deviceUserModel.SiteMicrotingUid > 0)
-        {
-            // A resigned worker's login is deactivated with it: end its live connections.
-            // Otherwise its worker tags may have changed: tell its devices to resync.
-            if (deviceUserModel.Resigned)
-                liveChanges.RevokeSiteForSiteUid(deviceUserModel.SiteMicrotingUid);
-            else
-                liveChanges.AssignmentsChangedForSiteUid(deviceUserModel.SiteMicrotingUid);
-        }
+            taskTranslationFiller, await LederCallerAsync().ConfigureAwait(false),
+            workerSaved: siteId =>
+            {
+                if (deviceUserModel.Resigned)
+                    liveChanges?.RevokeSite(siteId);
+                else
+                    liveChanges?.AssignmentsChanged(siteId);
+            });
 
         return new OperationResult(result.Success, backendConfigurationLocalizationService.GetString(result.Message));
     }

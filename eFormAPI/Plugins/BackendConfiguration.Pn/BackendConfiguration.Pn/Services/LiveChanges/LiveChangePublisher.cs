@@ -89,6 +89,7 @@ public sealed class LiveChangePublisher(
         if (changes.Count == 0) return;
         try
         {
+            Dispatching?.Invoke(changes);
             Track(Task.Run(() => PublishAsync(changes)));
         }
         catch (Exception e)
@@ -96,6 +97,9 @@ public sealed class LiveChangePublisher(
             warnings.Report(logger, "dispatch", e);
         }
     }
+
+    /// <summary>Test seam: observes each <see cref="Dispatch"/> call, synchronously, before the background publish starts.</summary>
+    internal Action<IReadOnlyList<LiveChange>>? Dispatching { get; set; }
 
     /// <summary>Completes when every dispatched publish (and revocation send) has finished. For tests and shutdown.</summary>
     public async Task WhenIdleAsync()
@@ -120,30 +124,20 @@ public sealed class LiveChangePublisher(
         if (!HasAudience) return;
         try
         {
+            // Revocations never get here: they carry their ids and ApplyRevocations ran them
+            // at commit, so no lookup (which can fail) stands between a change and its revoke.
             var lookups = await LoadLookupsAsync(changes).ConfigureAwait(false);
-            var siteOf = (LiveChange c) => c.SdkSiteId
-                                           ?? (c.SiteMicrotingUid is { } uid
-                                               && lookups.SdkSiteIdByMicrotingUid.TryGetValue(uid, out var id)
-                                               ? id
-                                               : null);
 
-            // 1. Revocations that needed a lookup.
-            foreach (var site in changes.Where(c => c.Kind == LiveChangeKind.RevokeSite).Select(siteOf)
-                         .OfType<int>().Distinct())
-            {
-                await SendAsync(() => notifier.RevokeSiteAsync(site)).ConfigureAwait(false);
-            }
-
-            // 2. Task hints.
+            // 1. Task hints.
             foreach (var hint in Coalesce(Resolve(changes, lookups)))
             {
                 await SendAsync(() => notifier.TaskChangedAsync(hint.PropertyId, hint.EventId, hint.PlanDay,
                     hint.ComplianceId, hint.Kind)).ConfigureAwait(false);
             }
 
-            // 3. Assignment hints.
-            foreach (var site in changes.Where(c => c.Kind == LiveChangeKind.Assignments).Select(siteOf)
-                         .OfType<int>().Where(s => s > 0).Distinct())
+            // 2. Assignment hints.
+            foreach (var site in changes.Where(c => c.Kind == LiveChangeKind.Assignments)
+                         .Select(c => c.SdkSiteId).OfType<int>().Where(s => s > 0).Distinct())
             {
                 await SendAsync(() => notifier.AssignmentsChangedAsync(site)).ConfigureAwait(false);
             }
@@ -184,31 +178,30 @@ public sealed class LiveChangePublisher(
     }
 
     /// <summary>
-    /// What the flush must look up, using what its own rows already say:
+    /// What the flush must look up. Each row is resolved within its OWN scope,
+    /// because another row of the flush names only part of a planning's events
+    /// (two events can share a planning: CalendarPastSeriesBackfill and
+    /// TaskListActiveWithoutPlanningRepair copy ItemPlanningId):
     /// <list type="bullet">
-    ///   <item>a task row (event + planning + property) maps its planning in memory;</item>
-    ///   <item>a planning whose property a Compliance row of the flush names is looked up by property
-    ///     (the PropertyId index), also for its planning-only rows (PlanningCase(Site), Planning...);</item>
-    ///   <item>only the remaining plannings go to the unindexed <c>ItemPlanningId</c> query.</item>
+    ///   <item>an event without its property: by primary key;</item>
+    ///   <item>a Compliance row (planning + property): that planning's events on that property,
+    ///     through the PropertyId index;</item>
+    ///   <item>a planning-only row (Planning, PlanningSite, PlanningCase(Site), name translation):
+    ///     every event of the planning, by the unindexed ItemPlanningId (base-package index follow-up).</item>
     /// </list>
+    /// A task row carries all its ids and needs no lookup.
     /// </summary>
     internal static LiveChangeLookupRequest LookupRequestFor(IReadOnlyList<LiveChange> changes)
     {
         var tasks = changes.Where(c => c.Kind == LiveChangeKind.Task).ToList();
         var eventIds = tasks.Where(c => c is { EventId: not null, PropertyId: null })
             .Select(c => c.EventId!.Value).Distinct().ToList();
-        var mapped = tasks.Where(c => c is { EventId: not null, ItemPlanningId: not null, PropertyId: not null })
-            .Select(c => c.ItemPlanningId!.Value).ToHashSet();
-        var planningRows = tasks.Where(c => c is { EventId: null, ItemPlanningId: not null }
-                                            && !mapped.Contains(c.ItemPlanningId!.Value)).ToList();
+        var planningRows = tasks.Where(c => c is { EventId: null, ItemPlanningId: not null }).ToList();
         var onProperty = planningRows.Where(c => c.PropertyId is not null)
             .Select(c => (PlanningId: c.ItemPlanningId!.Value, PropertyId: c.PropertyId!.Value)).Distinct().ToList();
-        var known = onProperty.Select(p => p.PlanningId).ToHashSet();
-        var anywhere = planningRows.Where(c => c.PropertyId is null && !known.Contains(c.ItemPlanningId!.Value))
+        var anywhere = planningRows.Where(c => c.PropertyId is null)
             .Select(c => c.ItemPlanningId!.Value).Distinct().ToList();
-        var siteUids = changes.Where(c => c is { SdkSiteId: null, SiteMicrotingUid: not null })
-            .Select(c => c.SiteMicrotingUid!.Value).Distinct().ToList();
-        return new LiveChangeLookupRequest(eventIds, onProperty, anywhere, siteUids);
+        return new LiveChangeLookupRequest(eventIds, onProperty, anywhere);
     }
 
     /// <summary>A fully resolved task hint.</summary>

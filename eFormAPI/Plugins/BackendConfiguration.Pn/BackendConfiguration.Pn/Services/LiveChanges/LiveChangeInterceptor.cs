@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Data.Common;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -139,9 +140,19 @@ public sealed class LiveChangeInterceptor(
     {
         if (context is null || !_transactions.TryGetValue(context, out var buffer)) return;
         _transactions.Remove(context);
-        foreach (var (target, changes) in buffer.Items)
+        try
         {
-            Deliver(target, changes);
+            // Every revocation of the transaction first, then the hints: a hint dispatched
+            // for an earlier save must not reach a connection a later save revoked.
+            var rests = buffer.Items.Select(i => (Collector: i.Target, Remaining: publisher.ApplyRevocations(i.Changes))).ToList();
+            foreach (var (target, rest) in rests)
+            {
+                Deliver(target, rest);
+            }
+        }
+        catch (Exception e)
+        {
+            warnings.Report(logger, "commit", e);
         }
     }
 
@@ -232,7 +243,7 @@ public sealed class LiveChangeInterceptor(
         }
     }
 
-    private void Deliver(LiveChangeCollector? target, List<LiveChange> changes)
+    private void Deliver(LiveChangeCollector? target, IReadOnlyList<LiveChange> changes)
     {
         try
         {

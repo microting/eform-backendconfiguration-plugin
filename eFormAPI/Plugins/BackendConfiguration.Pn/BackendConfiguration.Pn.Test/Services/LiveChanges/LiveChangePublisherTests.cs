@@ -60,7 +60,7 @@ public class LiveChangePublisherTests
 
     private void Lookups(params LiveEventRef[] events) =>
         _resolver.LoadAsync(default!, default).ReturnsForAnyArgs(
-            new LiveChangeLookups(events, new Dictionary<int, int>()));
+            new LiveChangeLookups(events));
 
     private static readonly DateOnly Day = new(2026, 11, 23);
 
@@ -189,8 +189,7 @@ public class LiveChangePublisherTests
         await _resolver.Received(1).LoadAsync(
             Arg.Is<LiveChangeLookupRequest>(r => r.EventIds.SequenceEqual(new[] { 7, 12345 })
                                                  && IsPairs(r.PlanningsOnProperty, 80, OtherProperty)
-                                                 && r.PlanningsAnywhere.SequenceEqual(new[] { 70 })
-                                                 && r.SiteMicrotingUids.Count == 0),
+                                                 && r.PlanningsAnywhere.SequenceEqual(new[] { 70 })),
             Arg.Any<CancellationToken>());
         Assert.That(_notifier.Calls, Is.EquivalentTo(new[]
         {
@@ -200,24 +199,48 @@ public class LiveChangePublisherTests
     }
 
     [Test]
-    public async Task APlanningOnlyRow_BorrowsThePropertyOfItsComplianceInTheSameFlush()
+    public async Task APlanningOnlyRow_IsResolvedAcrossAllItsEvents_EvenBesideAComplianceOfThePlanning()
     {
-        // CompleteEvent: the Compliance row (planning + property) and the PlanningCaseSite (planning only).
-        Lookups(new LiveEventRef(7, 70, Property));
+        // PR #1525 review: the Compliance row's property is ITS scope only. Planning 70 also
+        // backs event 9 on another property; the planning-only row (a PlanningCaseSite) must reach it.
+        Lookups(new LiveEventRef(7, 70, Property), new LiveEventRef(9, 70, OtherProperty));
 
         await _publisher.PublishAsync([LiveChange.ForPlanning(70, Property, 500), LiveChange.ForPlanning(70)]);
 
         await _resolver.Received(1).LoadAsync(
             Arg.Is<LiveChangeLookupRequest>(r => IsPairs(r.PlanningsOnProperty, 70, Property)
-                                                 && r.PlanningsAnywhere.Count == 0),
+                                                 && r.PlanningsAnywhere.SequenceEqual(new[] { 70 })),
             Arg.Any<CancellationToken>());
-        Assert.That(_notifier.Calls.Single(), Is.EqualTo(new Call("TaskChanged", Property, 7, null, 500, TaskChangeKinds.Changed)));
+        Assert.That(_notifier.Calls, Is.EquivalentTo(new[]
+        {
+            new Call("TaskChanged", Property, 7, null, 500, TaskChangeKinds.Changed),
+            new Call("TaskChanged", OtherProperty, 9, null, null, TaskChangeKinds.Changed)
+        }));
     }
 
     [Test]
-    public async Task APlanningOnlyRow_OfATaskRowInTheSameFlush_NeedsNoLookup()
+    public async Task APlanningOnlyRow_IsResolvedAcrossAllItsEvents_EvenBesideATaskRowOfThePlanning()
     {
+        // Two events can share a planning (CalendarPastSeriesBackfill, TaskListActiveWithoutPlanningRepair
+        // copy ItemPlanningId): the task row names one of them only.
+        Lookups(new LiveEventRef(7, 70, Property), new LiveEventRef(8, 70, OtherProperty));
+
         await _publisher.PublishAsync([LiveChange.ForAreaRulePlanning(7, 70, Property), LiveChange.ForPlanning(70)]);
+
+        await _resolver.Received(1).LoadAsync(
+            Arg.Is<LiveChangeLookupRequest>(r => r.PlanningsAnywhere.SequenceEqual(new[] { 70 })),
+            Arg.Any<CancellationToken>());
+        Assert.That(_notifier.Calls, Is.EquivalentTo(new[]
+        {
+            new Call("TaskChanged", Property, 7, null, null, TaskChangeKinds.Changed),
+            new Call("TaskChanged", OtherProperty, 8, null, null, TaskChangeKinds.Changed)
+        }));
+    }
+
+    [Test]
+    public async Task ATaskRowAlone_NeedsNoLookup()
+    {
+        await _publisher.PublishAsync([LiveChange.ForAreaRulePlanning(7, 70, Property)]);
 
         await _resolver.DidNotReceiveWithAnyArgs().LoadAsync(default!, default);
         Assert.That(_notifier.Calls.Single(), Is.EqualTo(new Call("TaskChanged", Property, 7, null, null, TaskChangeKinds.Changed)));
@@ -229,7 +252,9 @@ public class LiveChangePublisherTests
         _registry = new LiveConnectionRegistry(TimeProvider.System);
         _publisher = NewPublisher();
 
-        await _publisher.PublishAsync([LiveChange.ForEvent(7), LiveChange.ForAssignmentsOfSiteUid(5), LiveChange.ForRevokeSiteUid(6)]);
+        await _publisher.PublishAsync([LiveChange.ForEvent(7), LiveChange.ForAssignments(5)]);
+        Assert.That(_publisher.ApplyRevocations([LiveChange.ForRevokeSite(6), LiveChange.ForRevokeProperty(6, Property)]),
+            Is.Empty);
 
         await _resolver.DidNotReceiveWithAnyArgs().LoadAsync(default!, default);
         Assert.That(_notifier.Calls, Is.Empty);
@@ -237,23 +262,17 @@ public class LiveChangePublisherTests
     }
 
     [Test]
-    public async Task SitesKnownByUid_AreResolved_AndRevokesComeBeforeHints()
+    public async Task OneAssignmentHintPerSite_AfterTheTaskHints()
     {
-        _resolver.LoadAsync(default!, default).ReturnsForAnyArgs(
-            new LiveChangeLookups([], new Dictionary<int, int> { [5001] = 11, [5002] = 12 }));
-
         await _publisher.PublishAsync(
         [
-            LiveChange.ForTask(Property, 7),
-            LiveChange.ForAssignmentsOfSiteUid(5002),
             LiveChange.ForAssignments(12),
-            LiveChange.ForRevokeSiteUid(5001),
-            LiveChange.ForRevokeSiteUid(9999) // no such site
+            LiveChange.ForTask(Property, 7),
+            LiveChange.ForAssignments(12)
         ]);
 
         Assert.That(_notifier.Calls, Is.EqualTo(new[]
         {
-            new Call("RevokeSite", SdkSiteId: 11),
             new Call("TaskChanged", Property, 7, null, null, TaskChangeKinds.Changed),
             new Call("AssignmentsChanged", SdkSiteId: 12)
         }));
@@ -266,7 +285,6 @@ public class LiveChangePublisherTests
         [
             LiveChange.ForRevokeProperty(11, Property),
             LiveChange.ForRevokeSite(12),
-            LiveChange.ForRevokeSiteUid(5001),
             LiveChange.ForAssignments(11)
         ]);
 
@@ -275,7 +293,7 @@ public class LiveChangePublisherTests
             new Call("RevokePropertyAccess", PropertyId: Property, SdkSiteId: 11),
             new Call("RevokeSite", SdkSiteId: 12)
         }));
-        Assert.That(rest, Is.EqualTo(new[] { LiveChange.ForRevokeSiteUid(5001), LiveChange.ForAssignments(11) }));
+        Assert.That(rest, Is.EqualTo(new[] { LiveChange.ForAssignments(11) }));
     }
 
     [Test]
@@ -306,7 +324,7 @@ public class LiveChangePublisherTests
         _publisher.Dispatch([LiveChange.ForEvent(7)]);
         Assert.That(_notifier.Calls, Is.Empty, "the caller does not wait for the lookup");
 
-        gate.SetResult(new LiveChangeLookups([new LiveEventRef(7, 70, Property)], new Dictionary<int, int>()));
+        gate.SetResult(new LiveChangeLookups([new LiveEventRef(7, 70, Property)]));
         await _publisher.WhenIdleAsync();
         Assert.That(_notifier.Calls.Single(), Is.EqualTo(new Call("TaskChanged", Property, 7, null, null, TaskChangeKinds.Changed)));
     }

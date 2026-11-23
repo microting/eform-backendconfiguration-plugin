@@ -195,6 +195,47 @@ public class LiveChangeInterceptorTests : TestBaseSetup
                 return ex.Id;
             },
             (s, _) => [new Call("TaskChanged", s.PropertyId, s.EventId, null, null, TaskChangeKinds.Changed)]),
+        // PR #1525 review: rows the list reads that touch no other watched row.
+        new Kind("CalendarConfiguration", false,
+            async (s, sp) =>
+            {
+                var cc = new CalendarConfiguration
+                {
+                    AreaRulePlanningId = s.EventId, StartHour = 10, Duration = 2,
+                    WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+                };
+                await cc.Create(Bc(sp));
+                return cc.Id;
+            },
+            (s, _) => [new Call("TaskChanged", s.PropertyId, s.EventId, null, null, TaskChangeKinds.Changed)]),
+        new Kind("AreaRulePlanningFile", false,
+            async (s, sp) =>
+            {
+                var f = new AreaRulePlanningFile
+                {
+                    AreaRulePlanningId = s.EventId, UploadedDataId = 1, OriginalFileName = "a.pdf", MimeType = "application/pdf",
+                    WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+                };
+                await f.Create(Bc(sp));
+                return f.Id;
+            },
+            (s, _) => [new Call("TaskChanged", s.PropertyId, s.EventId, null, null, TaskChangeKinds.Changed)]),
+        new Kind("CalendarBoard", false,
+            async (s, sp) =>
+            {
+                // A NEW board shows on no task (GetBoards creates a default one on read):
+                // only its edit is a change.
+                var b = new CalendarBoard
+                {
+                    PropertyId = s.PropertyId, Name = "Board", Color = "#fff",
+                    WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+                };
+                await b.Create(Bc(sp));
+                b.Color = "#000";
+                await b.Update(Bc(sp));
+                return b.Id;
+            },
+            (s, _) => [new Call("TaskChanged", s.PropertyId, null, null, null, TaskChangeKinds.Property)]),
     ];
 
     [TestCaseSource(nameof(Kinds))]
@@ -311,6 +352,64 @@ public class LiveChangeInterceptorTests : TestBaseSetup
         {
             new Call("TaskChanged", seed.PropertyId, seed.EventId, null, null, TaskChangeKinds.Changed)
         }));
+    }
+
+    [Test]
+    public async Task DeletingATasksCalendarConfiguration_IsAChangeOfTheTask()
+    {
+        var seed = await SeedEventAsync();
+        var cc = new CalendarConfiguration
+        {
+            AreaRulePlanningId = seed.EventId, StartHour = 10, Duration = 2,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await cc.Create(BackendConfigurationPnDbContext!);
+
+        var calls = await _host.InRequestAsync(async sp =>
+        {
+            var row = await Bc(sp).CalendarConfigurations.SingleAsync(x => x.Id == cc.Id);
+            await row.Delete(Bc(sp));
+        });
+
+        Assert.That(calls, Is.EqualTo(new[]
+        {
+            new Call("TaskChanged", seed.PropertyId, seed.EventId, null, null, TaskChangeKinds.Changed)
+        }), "the task still exists; its timing changed");
+    }
+
+    [Test]
+    public async Task ABackgroundTransaction_AppliesAllItsRevocations_BeforeDispatchingAnyHint()
+    {
+        // PR #1525 review: save 1 changes a task, save 2 unassigns a worker, one commit.
+        // Every revocation of the transaction must run before the first hint is dispatched.
+        var seed = await SeedEventAsync();
+        var worker = new PropertyWorker
+        {
+            PropertyId = seed.PropertyId, WorkerId = Site,
+            WorkflowState = Constants.WorkflowStates.Created, CreatedByUserId = 1, UpdatedByUserId = 1
+        };
+        await worker.Create(BackendConfigurationPnDbContext!);
+        _host.Publisher.Dispatching = _ => _host.Notifier.Mark("Dispatch");
+
+        var calls = await _host.InBackgroundAsync(async sp =>
+        {
+            var db = Bc(sp);
+            await db.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                await using var tx = await db.Database.BeginTransactionAsync();
+                var arp = await db.AreaRulePlannings.SingleAsync(x => x.Id == seed.EventId);
+                arp.SendNotifications = !arp.SendNotifications;
+                await arp.Update(db);
+                var row = await db.PropertyWorkers.SingleAsync(x => x.Id == worker.Id);
+                await row.Delete(db);
+                await tx.CommitAsync();
+            });
+        });
+
+        var methods = calls.Select(c => c.Method).ToList();
+        Assert.That(methods, Does.Contain("Dispatch").And.Contain("RevokePropertyAccess"));
+        Assert.That(methods.IndexOf("RevokePropertyAccess"), Is.LessThan(methods.IndexOf("Dispatch")),
+            string.Join(", ", methods));
     }
 
     [Test]

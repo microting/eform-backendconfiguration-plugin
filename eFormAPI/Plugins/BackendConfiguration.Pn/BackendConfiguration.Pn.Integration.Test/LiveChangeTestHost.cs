@@ -39,6 +39,12 @@ public sealed class RecordingLiveNotifier : ILiveNotifier
         lock (_calls) _calls.Clear();
     }
 
+    /// <summary>Records a non-notifier event (e.g. a dispatch) in the same ordered list.</summary>
+    public void Mark(string what)
+    {
+        lock (_calls) _calls.Add(new Call(what));
+    }
+
     private Task Record(Call call)
     {
         lock (_calls) _calls.Add(call);

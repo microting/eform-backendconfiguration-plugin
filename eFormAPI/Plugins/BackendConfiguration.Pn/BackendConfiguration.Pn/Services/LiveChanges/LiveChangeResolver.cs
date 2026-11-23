@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microting.eFormApi.BasePn.Abstractions;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 
 namespace BackendConfiguration.Pn.Services.LiveChanges;
@@ -15,10 +14,9 @@ public readonly record struct LiveEventRef(int EventId, int ItemPlanningId, int 
 
 /// <summary>What one flush needed to look up.</summary>
 public sealed record LiveChangeLookups(
-    IReadOnlyList<LiveEventRef> Events,
-    IReadOnlyDictionary<int, int> SdkSiteIdByMicrotingUid)
+    IReadOnlyList<LiveEventRef> Events)
 {
-    public static readonly LiveChangeLookups Empty = new([], new Dictionary<int, int>());
+    public static readonly LiveChangeLookups Empty = new([]);
 }
 
 /// <summary>
@@ -31,17 +29,15 @@ public sealed record LiveChangeLookups(
 public sealed record LiveChangeLookupRequest(
     IReadOnlyCollection<int> EventIds,
     IReadOnlyCollection<(int PlanningId, int PropertyId)> PlanningsOnProperty,
-    IReadOnlyCollection<int> PlanningsAnywhere,
-    IReadOnlyCollection<int> SiteMicrotingUids)
+    IReadOnlyCollection<int> PlanningsAnywhere)
 {
-    public bool IsEmpty => EventIds.Count == 0 && PlanningsOnProperty.Count == 0 && PlanningsAnywhere.Count == 0
-                           && SiteMicrotingUids.Count == 0;
+    public bool IsEmpty => EventIds.Count == 0 && PlanningsOnProperty.Count == 0 && PlanningsAnywhere.Count == 0;
 }
 
 /// <summary>
 /// Resolves the ids a capture could not see on the row. Called by the
 /// publisher after the commit and off the caller's path: at most three small queries on
-/// the plugin database (see <see cref="LiveChangeResolver"/>) and one on the SDK database per flush.
+/// the plugin database (see <see cref="LiveChangeResolver"/>) per flush.
 /// </summary>
 public interface ILiveChangeResolver
 {
@@ -97,21 +93,6 @@ public class LiveChangeResolver(IServiceScopeFactory scopeFactory) : ILiveChange
             }
         }
 
-        var sites = new Dictionary<int, int>();
-        var siteMicrotingUids = request.SiteMicrotingUids;
-        if (siteMicrotingUids.Count > 0)
-        {
-            var core = await scope.ServiceProvider.GetRequiredService<IEFormCoreService>().GetCore().ConfigureAwait(false);
-            await using var sdkDbContext = core.DbContextHelper.GetDbContext();
-            var rows = await sdkDbContext.Sites
-                .AsNoTracking()
-                .Where(x => x.MicrotingUid != null && siteMicrotingUids.Contains(x.MicrotingUid.Value))
-                .Select(x => new { Uid = x.MicrotingUid!.Value, x.Id })
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-            foreach (var row in rows) sites.TryAdd(row.Uid, row.Id);
-        }
-
-        return new LiveChangeLookups(events, sites);
+        return new LiveChangeLookups(events);
     }
 }

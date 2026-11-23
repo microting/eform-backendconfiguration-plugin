@@ -27,17 +27,11 @@ public interface ILiveChanges
     /// <summary><c>AssignmentsChanged</c> to the worker's site group (SDK <c>Sites.Id</c>).</summary>
     void AssignmentsChanged(int sdkSiteId);
 
-    /// <summary>As <see cref="AssignmentsChanged"/>, for a site known only by its <c>MicrotingUid</c> (resolved at flush).</summary>
-    void AssignmentsChangedForSiteUid(int siteMicrotingUid);
-
     /// <summary>Takes the site's connections out of the property group, at once.</summary>
     void RevokePropertyAccess(int sdkSiteId, int propertyId);
 
     /// <summary>Ends every connection of the site, at once (SDK <c>Sites.Id</c>).</summary>
     void RevokeSite(int sdkSiteId);
-
-    /// <summary>As <see cref="RevokeSite"/>, for a site known only by its <c>MicrotingUid</c> (resolved at flush).</summary>
-    void RevokeSiteForSiteUid(int siteMicrotingUid);
 
     /// <summary>
     /// Marks the scope as a read path until disposed: rows written meanwhile
@@ -78,15 +72,10 @@ public sealed class LiveChangeCollector(
 
     public void AssignmentsChanged(int sdkSiteId) => AddExplicit(LiveChange.ForAssignments(sdkSiteId));
 
-    public void AssignmentsChangedForSiteUid(int siteMicrotingUid) =>
-        AddExplicit(LiveChange.ForAssignmentsOfSiteUid(siteMicrotingUid));
-
     public void RevokePropertyAccess(int sdkSiteId, int propertyId) =>
         Accept([LiveChange.ForRevokeProperty(sdkSiteId, propertyId)]);
 
     public void RevokeSite(int sdkSiteId) => Accept([LiveChange.ForRevokeSite(sdkSiteId)]);
-
-    public void RevokeSiteForSiteUid(int siteMicrotingUid) => Accept([LiveChange.ForRevokeSiteUid(siteMicrotingUid)]);
 
     public IDisposable BeginReadPath()
     {

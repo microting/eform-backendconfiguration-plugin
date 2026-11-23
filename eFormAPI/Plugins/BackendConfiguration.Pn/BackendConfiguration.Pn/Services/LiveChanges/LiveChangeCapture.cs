@@ -6,6 +6,10 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microting.eForm.Infrastructure.Constants;
 using BcAreaRulePlanning = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanning;
 using BcAreaRulePlanningWorkerTag = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanningWorkerTag;
+using BcAreaRulePlanningFile = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanningFile;
+using BcAreaRulePlanningTag = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.AreaRulePlanningTag;
+using BcCalendarBoard = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.CalendarBoard;
+using BcCalendarConfiguration = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.CalendarConfiguration;
 using BcCalendarOccurrenceException = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.CalendarOccurrenceException;
 using BcCompliance = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.Compliance;
 using BcPlanningSite = Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities.PlanningSite;
@@ -33,6 +37,7 @@ internal static class LiveChangeCapture
 
     private static bool IsWatched(object entity) => entity is BcCompliance or BcAreaRulePlanning or BcPlanningSite
         or BcPropertyWorker or BcCalendarOccurrenceException or BcAreaRulePlanningWorkerTag
+        or BcCalendarConfiguration or BcAreaRulePlanningFile or BcAreaRulePlanningTag or BcCalendarBoard
         or IpPlanning or IpPlanningSite or IpPlanningCase or IpPlanningCaseSite or IpPlanningNameTranslation;
 
     /// <summary>
@@ -99,6 +104,23 @@ internal static class LiveChangeCapture
                     break;
                 case BcAreaRulePlanningWorkerTag x:
                     changes.Add(LiveChange.ForEvent(x.AreaRulePlanningId));
+                    break;
+                // The task's time and board (ResizeTask scope "all" writes only this), its
+                // attachments and tags: the task itself stays, so even a removal is a change.
+                case BcCalendarConfiguration x:
+                    changes.Add(LiveChange.ForEvent(x.AreaRulePlanningId));
+                    break;
+                case BcAreaRulePlanningFile x:
+                    changes.Add(LiveChange.ForEvent(x.AreaRulePlanningId));
+                    break;
+                case BcAreaRulePlanningTag x:
+                    changes.Add(LiveChange.ForEvent(x.AreaRulePlanningId));
+                    break;
+                // A board's name or colour shows on every task of the property placed on it.
+                // A NEW board is on no task yet; GetBoards creates the default one lazily on
+                // read paths (ListBoards, ListChanges), which must not announce.
+                case BcCalendarBoard x when entry.State != EntityState.Added:
+                    changes.Add(LiveChange.ForTask(x.PropertyId));
                     break;
                 case BcPropertyWorker x:
                     // Only the assignment itself (added, removed, restored), not edits of its other columns.

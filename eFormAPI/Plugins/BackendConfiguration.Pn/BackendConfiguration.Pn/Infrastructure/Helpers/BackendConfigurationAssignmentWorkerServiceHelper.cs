@@ -892,7 +892,10 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
             ItemsPlanningPnDbContext itemsPlanningPnDbContext,
             Services.CalendarAssignmentReconciliation.ICalendarAssignmentReconciliationService? reconciliationService = null,
             Services.TaskTranslation.ITaskTranslationFiller? translationFiller = null,
-            LederCaller? lederCaller = null)
+            LederCaller? lederCaller = null,
+            // Live updates: called with the SDK Sites.Id once the worker row (resignation, tags)
+            // has been saved, whatever this method then returns.
+            Action<int>? workerSaved = null)
         {
             deviceUserModel.UserFirstName = deviceUserModel.UserFirstName.Trim();
             deviceUserModel.UserLastName = deviceUserModel.UserLastName.Trim();
@@ -1153,6 +1156,7 @@ public static class BackendConfigurationAssignmentWorkerServiceHelper
                         worker.Resigned = deviceUserModel.Resigned;
                         worker.ResignedAtDate = deviceUserModel.ResignedAtDate;
                         await worker.Update(sdkDbContext).ConfigureAwait(false);
+                        workerSaved?.Invoke(site.Id);
 
                         // Account state follows the resignation. Resigned itself is only
                         // a visibility flag - no authentication code reads it - so without

@@ -7,6 +7,7 @@ using BackendConfiguration.Pn.Services.LiveChanges;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Call = BackendConfiguration.Pn.Test.Services.LiveChanges.RecordingLiveNotifier.Call;
 
@@ -168,6 +169,22 @@ public class LiveChangeCollectorTests
         collector.TaskChanged(1, 7);
         await _publisher.WhenIdleAsync();
         Assert.That(_notifier.Calls.Single(), Is.EqualTo(new Call("TaskChanged", 1, 7, null, null, TaskChangeKinds.Changed)));
+    }
+
+    [Test]
+    public void ARevocation_NeedsNoLookup_SoAFailingResolverCannotDropIt()
+    {
+        var resolver = Substitute.For<ILiveChangeResolver>();
+        resolver.LoadAsync(default!, default).ThrowsAsyncForAnyArgs(new InvalidOperationException("db down"));
+        var publisher = new LiveChangePublisher(_notifier, resolver, LiveChangePublisherTests.ConnectedRegistry(),
+            new LiveChangeWarnings(), NullLogger<LiveChangePublisher>.Instance);
+        var collector = new LiveChangeCollector(_root, publisher, new LiveChangeWarnings(),
+            NullLogger<LiveChangeCollector>.Instance);
+
+        collector.RevokeSite(12);
+
+        Assert.That(_notifier.Calls, Is.EqualTo(new[] { new Call("RevokeSite", SdkSiteId: 12) }), "at once, by SDK site id");
+        resolver.DidNotReceiveWithAnyArgs().LoadAsync(default!, default);
     }
 
     [Test]
