@@ -676,8 +676,17 @@ public class LiveChangeInterceptorTests : TestBaseSetup
         var seed = await SeedEventAsync();
         var other = await SeedEventAsync();
         BackendConfigurationPnDbContext? first = null, second = null;
+        // Reuse by construction: the two request scopes must be the ONLY leases of the pooled
+        // context. The real resolver leases one in its own scope while request one's flush runs
+        // in the background; that lease overlaps the end of request one, and whichever instance
+        // the pool gets back first is the one request two rents (FIFO). That made the instance
+        // check flaky. The stub answers the one lookup request one needs (its Compliance row).
+        var resolver = Substitute.For<ILiveChangeResolver>();
+        resolver.LoadAsync(default!, default).ReturnsForAnyArgs(
+            new LiveChangeLookups([new LiveEventRef(seed.EventId, seed.PlanningId, seed.PropertyId)]));
+        using var host = NewHost(s => s.AddSingleton(resolver));
 
-        var one = await _host.InRequestAsync(async sp =>
+        var one = await host.InRequestAsync(async sp =>
         {
             first = Bc(sp);
             await NewCompliance(seed).Create(first);
@@ -691,7 +700,7 @@ public class LiveChangeInterceptorTests : TestBaseSetup
             });
             first.ChangeTracker.Clear();
         });
-        var two = await _host.InRequestAsync(async sp =>
+        var two = await host.InRequestAsync(async sp =>
         {
             second = Bc(sp);
             var arp = await second.AreaRulePlannings.SingleAsync(x => x.Id == seed.EventId);
