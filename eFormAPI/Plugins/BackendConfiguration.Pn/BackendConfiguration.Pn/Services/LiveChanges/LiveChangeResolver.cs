@@ -55,6 +55,13 @@ public class LiveChangeResolver(IServiceScopeFactory scopeFactory) : ILiveChange
 {
     public async Task<LiveChangeLookups> LoadAsync(LiveChangeLookupRequest request, CancellationToken cancellationToken)
     {
+        // Ids <= 0 (planning 0 = "not deployed") are never lookup keys, whoever the caller is.
+        request = request with
+        {
+            EventIds = request.EventIds.Where(id => id > 0).ToList(),
+            PlanningsOnProperty = request.PlanningsOnProperty.Where(p => p.PlanningId > 0).ToList(),
+            PlanningsAnywhere = request.PlanningsAnywhere.Where(id => id > 0).ToList()
+        };
         await using var scope = scopeFactory.CreateAsyncScope();
         var events = new List<LiveEventRef>();
         if (request.EventIds.Count > 0 || request.PlanningsOnProperty.Count > 0 || request.PlanningsAnywhere.Count > 0)
