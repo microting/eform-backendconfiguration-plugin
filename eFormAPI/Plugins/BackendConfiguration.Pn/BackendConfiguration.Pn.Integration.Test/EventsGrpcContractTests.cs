@@ -972,11 +972,13 @@ public class EventsGrpcContractTests : TestBaseSetup
         Assert.Multiple(() =>
         {
             // contract_version 2 adds ListChanges; every version-1 capability stays.
+            // "live_hub" (the SignalR hub, outside the proto) leaves the version at 2.
             Assert.That(info.ContractVersion, Is.EqualTo(2));
             Assert.That(info.Capabilities, Is.EquivalentTo(new[]
             {
                 "request_id", "remove_photo_expected_storage_id", "write_reply_compliance_id",
-                "get_event", "event_version", "event_etag", "event_due_local", "list_changes"
+                "get_event", "event_version", "event_etag", "event_due_local", "list_changes",
+                "live_hub"
             }));
         });
     }

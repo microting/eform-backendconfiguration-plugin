@@ -56,7 +56,10 @@ public partial class EventsGrpcService
         "event_etag",
         "event_due_local",
         // contract_version 2.
-        "list_changes"
+        "list_changes",
+        // Outside the proto (SignalR hub at Hubs.LiveHubContract.HubPath on
+        // the web origin), so contract_version stays 2.
+        Hubs.LiveHubContract.Capability
     ];
 
     /// <summary>

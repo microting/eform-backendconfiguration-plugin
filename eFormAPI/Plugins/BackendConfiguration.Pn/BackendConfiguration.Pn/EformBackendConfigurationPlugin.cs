@@ -29,6 +29,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Infrastructure.Helpers;
+using BackendConfiguration.Pn.Hubs;
 using BackendConfiguration.Pn.Infrastructure.Models.TaskManagement;
 using BackendConfiguration.Pn.Services.ChemicalReporting;
 using Microting.eForm.Infrastructure.Models;
@@ -123,6 +124,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddGrpc();
+        // Live-update hints (package 10): SignalR hub + ILiveNotifier.
+        services.AddBackendConfigurationLiveHub();
         services.AddTransient<Services.UserPropertyAccess.IBackendConfigurationUserPropertyAccess,
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,
@@ -1036,6 +1039,7 @@ public class EformBackendConfigurationPlugin : IEformPlugin
             endpoints.MapGrpcService<Services.GrpcServices.SettingsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.ChemicalsGrpcService>();
             endpoints.MapGrpcService<Services.GrpcServices.TailBiteGrpcService>();
+            endpoints.MapBackendConfigurationLiveHub();
         });
     }
 
