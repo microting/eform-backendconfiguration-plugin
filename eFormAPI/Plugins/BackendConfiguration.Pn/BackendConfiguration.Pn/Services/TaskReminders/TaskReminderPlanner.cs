@@ -21,6 +21,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SdkConstants = Microting.eForm.Infrastructure.Constants.Constants;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Const;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
@@ -132,6 +133,12 @@ public sealed class TaskReminderOptions
 
     public int MaxPropertiesPerPass { get; set; } = 25;
     public TimeSpan PassBudget { get; set; } = TimeSpan.FromSeconds(1.5);
+
+    /// <summary>
+    /// The deadline of one worker's calendar read. A read past it is abandoned (its scope is disposed
+    /// only when it ends; no other read starts meanwhile) and the worker is read again in a later pass.
+    /// </summary>
+    public TimeSpan WorkerReadTimeout { get; set; } = TimeSpan.FromSeconds(10);
     public TimeSpan MaxBackoff { get; set; } = TimeSpan.FromSeconds(30);
 }
 
@@ -175,8 +182,8 @@ public static class TaskReminderText
 {
     public const int TitleMax = 200;
     public const int BodyMax = 400;
-    internal const string StartsAtKey = "TaskReminderStartsAt";
-    internal const string UntitledKey = "TaskReminderUntitled";
+    internal const string StartsAtResource = "TaskReminderStartsAt";
+    internal const string UntitledResource = "TaskReminderUntitled";
     private const string Fallback = "en-US";
 
     private static readonly Lazy<Dictionary<string, Dictionary<string, string>>> Texts = new(Load);
@@ -184,8 +191,8 @@ public static class TaskReminderText
     public static (string Title, string Body) Render(string? languageCode, string? taskTitle, TimeOnly localStart,
         string? propertyName)
     {
-        var title = string.IsNullOrWhiteSpace(taskTitle) ? Lookup(UntitledKey, languageCode) : taskTitle.Trim();
-        var startsAt = string.Format(CultureInfo.InvariantCulture, Lookup(StartsAtKey, languageCode),
+        var title = string.IsNullOrWhiteSpace(taskTitle) ? Lookup(UntitledResource, languageCode) : taskTitle.Trim();
+        var startsAt = string.Format(CultureInfo.InvariantCulture, Lookup(StartsAtResource, languageCode),
             localStart.ToString("HH:mm", CultureInfo.InvariantCulture));
         var body = string.IsNullOrWhiteSpace(propertyName) ? startsAt : $"{startsAt} · {propertyName.Trim()}";
         return (Fit(title, TitleMax), Fit(body, BodyMax));
@@ -231,7 +238,7 @@ public static class TaskReminderText
         foreach (var entry in document.RootElement.EnumerateArray())
         {
             var key = entry.GetProperty("Key").GetString();
-            if (key is not (StartsAtKey or UntitledKey)) continue;
+            if (key is not (StartsAtResource or UntitledResource)) continue;
             result[key] = entry.GetProperty("LocalizedValue").EnumerateObject()
                 .ToDictionary(p => p.Name, p => p.Value.GetString() ?? string.Empty, StringComparer.OrdinalIgnoreCase);
         }
@@ -277,7 +284,19 @@ public sealed class TaskReminderPlanner(
     private readonly ConcurrentDictionary<int, (DateTime At, string DayKey)> _lastPlanned = new();
     // Workers of a property a pass did not reach (budget spent), done by the next pass, valid only
     // while no real change marked the property since and its local day is the same.
-    private readonly ConcurrentDictionary<int, (HashSet<int> Sites, long MarkSequence, string DayKey)> _remaining = new();
+    private readonly ConcurrentDictionary<int, Carry> _remaining = new();
+
+    /// <summary>A round left for a later pass: the workers to read, and what it was started for.</summary>
+    private sealed record Carry(HashSet<int> Sites, long MarkSequence, string DayKey, bool Failed);
+    // True after a sweep with no opted-in install found no outstanding outbox rows. Only a plan writes
+    // rows, and a plan needs an opt-in, so until the next opt-in the idle sweep is its one token query.
+    private bool _nothingOutstanding;
+
+    // Calendar reads abandoned at their deadline that are still running (each holds a scope, a pooled
+    // context and a connection). While one runs, no new read starts: at most one exists at a time.
+    private int _abandonedReads;
+
+    internal int AbandonedReads => Volatile.Read(ref _abandonedReads);
     private static readonly TimeSpan PropertyWarningRepeat = TimeSpan.FromHours(1);
     // The last worker read per property: a restarted round begins after it and wraps around, so a
     // property marked again before every pass still reaches every worker within one rotation.
@@ -367,7 +386,20 @@ public sealed class TaskReminderPlanner(
         var sites = await OptedInTokens(db).Select(t => t.SdkSiteId).Distinct().ToListAsync(cancellationToken)
             .ConfigureAwait(false);
         signals.AnyOptedIn = sites.Count > 0;
-        if (sites.Count == 0)
+
+        // Properties with outbox rows a plan may still have to retract, whatever their assignments and
+        // opt-ins now (a property removed, or its last install opted out, after a lost mark or a
+        // restart). Skipped while idle once known empty.
+        var outstanding = new List<int>();
+        if (sites.Count > 0 || !_nothingOutstanding)
+        {
+            outstanding = await OutstandingRows(db, now).Select(n => n.PropertyId).Distinct()
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        var idle = sites.Count == 0 && outstanding.Count == 0;
+        _nothingOutstanding = idle;
+        if (idle)
         {
             _lastPlanned.Clear();
             return;
@@ -377,7 +409,8 @@ public sealed class TaskReminderPlanner(
             .Where(pw => sites.Contains(pw.WorkerId) && pw.WorkflowState != SdkConstants.WorkflowStates.Removed)
             .Select(pw => pw.PropertyId);
         var properties = await db.Properties.AsNoTracking()
-            .Where(p => propertyIds.Contains(p.Id) && p.WorkflowState != SdkConstants.WorkflowStates.Removed)
+            .Where(p => (propertyIds.Contains(p.Id) && p.WorkflowState != SdkConstants.WorkflowStates.Removed)
+                        || outstanding.Contains(p.Id))
             .Select(p => new { p.Id, p.TimeZone })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
         var marked = 0;
@@ -446,6 +479,12 @@ public sealed class TaskReminderPlanner(
             {
                 await PlanPropertyAsync(properties[i], cancellationToken, budget).ConfigureAwait(false);
                 if (_remaining.ContainsKey(properties[i])) unfinished.Add(properties[i]);
+                if (AbandonedReads > 0)
+                {
+                    // The database is slow: no further reads until the abandoned one has ended.
+                    RequeueFrom(i + 1);
+                    break;
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -482,109 +521,229 @@ public sealed class TaskReminderPlanner(
         Stopwatch? budget = null)
     {
         var markSequence = signals.MarkSequence(propertyId); // before reading: a later mark restarts the round
-        await using var scope = scopeFactory.CreateAsyncScope();
-        var services = scope.ServiceProvider;
-        var db = ContextFor(services);
-        var now = timeProvider.GetUtcNow().UtcDateTime;
-        var property = await db.Properties.AsNoTracking()
-            .Where(p => p.Id == propertyId)
-            .Select(p => new { p.Name, p.TimeZone, p.WorkflowState })
-            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
-        var zone = PropertyTimeZones.Resolve(property?.TimeZone);
-        var day = TaskReminderTime.LocalToday(now, zone);
-        var dayKey = DayKeyOf(day);
-
-        var sites = new List<int>();
-        if (property != null && property.WorkflowState != SdkConstants.WorkflowStates.Removed)
+        var scope = scopeFactory.CreateAsyncScope();
+        // A calendar read abandoned at its deadline (or at shutdown) still uses this scope's context:
+        // the scope is then disposed only once that read has ended, never under it.
+        Task? abandoned = null;
+        try
         {
-            var assigned = db.PropertyWorkers
-                .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != SdkConstants.WorkflowStates.Removed)
-                .Select(pw => pw.WorkerId);
-            sites = await OptedInTokens(db).Where(t => assigned.Contains(t.SdkSiteId))
-                .Select(t => t.SdkSiteId).Distinct().OrderBy(s => s).ToListAsync(cancellationToken).ConfigureAwait(false);
-        }
+            var services = scope.ServiceProvider;
+            var db = ContextFor(services);
+            var now = timeProvider.GetUtcNow().UtcDateTime;
+            var property = await db.Properties.AsNoTracking()
+                .Where(p => p.Id == propertyId)
+                .Select(p => new { p.Name, p.TimeZone, p.WorkflowState })
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            var zone = PropertyTimeZones.Resolve(property?.TimeZone);
+            var day = TaskReminderTime.LocalToday(now, zone);
+            var dayKey = DayKeyOf(day);
 
-        var existing = (await TaskNotificationOutbox.ListForPropertyDayAsync(db, propertyId, dayKey, cancellationToken)
-                .ConfigureAwait(false))
-            .Where(n => n.Kind == TaskNotificationKinds.TaskDue)
-            .ToLookup(n => n.SdkSiteId);
-
-        var retry = false;
-        // Workers whose rows remain although they are no longer opted in or assigned: retracted, no read needed.
-        foreach (var gone in existing.Select(g => g.Key).Where(s => !sites.Contains(s)))
-        {
-            retry |= await DiffWorkerAsync(db, gone, [], existing[gone], now, cancellationToken).ConfigureAwait(false);
-        }
-
-        // This round's workers: the ones a previous pass did not reach, if nothing has changed since
-        // (no new mark, same local day); otherwise all of them again.
-        if (sites.Count == 0) _lastSite.TryRemove(propertyId, out _);
-        var rotation = _lastSite.TryGetValue(propertyId, out var lastSite)
-            ? sites.Where(s => s > lastSite).Concat(sites.Where(s => s <= lastSite)).ToList()
-            : sites;
-        var round = _remaining.TryRemove(propertyId, out var left) && left.MarkSequence == markSequence
-                                                                     && left.DayKey == dayKey
-            ? rotation.Where(left.Sites.Contains).ToList()
-            : rotation;
-        var failed = false;
-        if (round.Count > 0)
-        {
-            var languages = await SiteLanguagesAsync(services, round, cancellationToken).ConfigureAwait(false);
-            var calendar = services.GetRequiredService<IBackendConfigurationCalendarService>();
-            // The planner only reads: nothing it might write is announced, and it never deploys.
-            using var readPath = services.GetService<ILiveChanges>()?.BeginReadPath();
-            for (var i = 0; i < round.Count; i++)
+            var sites = new List<int>();
+            if (property != null && property.WorkflowState != SdkConstants.WorkflowStates.Removed)
             {
-                if (i > 0 && budget != null && budget.Elapsed > options.PassBudget)
-                {
-                    _remaining[propertyId] = (round.Skip(i).ToHashSet(), markSequence, dayKey);
-                    break;
-                }
+                var assigned = db.PropertyWorkers
+                    .Where(pw => pw.PropertyId == propertyId && pw.WorkflowState != SdkConstants.WorkflowStates.Removed)
+                    .Select(pw => pw.WorkerId);
+                sites = await OptedInTokens(db).Where(t => assigned.Contains(t.SdkSiteId))
+                    .Select(t => t.SdkSiteId).Distinct().OrderBy(s => s).ToListAsync(cancellationToken).ConfigureAwait(false);
+            }
 
-                var site = round[i];
-                _lastSite[propertyId] = site;
-                try
-                {
-                    var (languageId, languageCode) = languages[site];
-                    var result = await calendar.GetTasksForWeek(EventsGrpcService.WorkerTaskListRequest(
-                        propertyId, dayKey, dayKey, site, languageId)).ConfigureAwait(false);
-                    if (!result.Success || result.Model == null)
-                    {
-                        failed = true; // this worker's rows are left as they are
-                        continue;
-                    }
+            // Today's rows, plus the outstanding rows of other days (a 23:55 reminder whose task is
+            // finished at 00:01): each is reconciled against its own day.
+            var otherDays = await OutstandingRows(db, now).Where(n => n.PropertyId == propertyId && n.PlanDayKey != dayKey)
+                .Select(n => n.PlanDayKey).Distinct().OrderBy(d => d).ToListAsync(cancellationToken).ConfigureAwait(false);
+            var existing = new Dictionary<string, ILookup<int, TaskNotification>>();
+            foreach (var key in otherDays.Prepend(dayKey))
+            {
+                existing[key] = (await TaskNotificationOutbox.ListForPropertyDayAsync(db, propertyId, key, cancellationToken)
+                        .ConfigureAwait(false))
+                    .Where(n => n.Kind == TaskNotificationKinds.TaskDue)
+                    .ToLookup(n => n.SdkSiteId);
+            }
 
-                    var present = Candidates(result.Model, day, zone).Select(task =>
-                    {
-                        var (title, body) = TaskReminderText.Render(languageCode, task.Title, task.LocalStart, property!.Name);
-                        return new TaskNotificationPlan(site, propertyId, task.EventId, dayKey, task.ComplianceId,
-                            TaskNotificationKinds.TaskDue, task.PlannedStartUtc, task.PlannedStartUtc - options.Lead, title, body);
-                    }).ToList();
-                    retry |= await DiffWorkerAsync(db, site, present, existing[site], now, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+            var redo = new HashSet<int>(); // read again soon: rows in flight, or a read past its deadline
+            // Workers whose rows remain although they are no longer opted in or assigned: retracted, no read needed.
+            foreach (var gone in existing.Values.SelectMany(l => l.Select(g => g.Key)).Distinct().Where(s => !sites.Contains(s)))
+            {
+                foreach (var rows in existing.Values)
                 {
-                    failed = true;
-                    logger.LogDebug(e, "Task reminder planner: site {SdkSiteId} on property {PropertyId} failed", site, propertyId);
+                    // Not a worker of the round, so not carried: rows in flight are retried by re-queuing the property.
+                    if (await DiffWorkerAsync(db, gone, [], rows[gone], now, cancellationToken).ConfigureAwait(false))
+                        signals.Requeue(propertyId);
                 }
             }
+
+            // This round's workers: the ones earlier passes left (unread, or to redo), if nothing has
+            // changed since (no new mark, same local day); otherwise all of them again, beginning after
+            // the last worker read so a busy property still reaches everyone within one rotation.
+            if (sites.Count == 0) _lastSite.TryRemove(propertyId, out _);
+            var rotation = _lastSite.TryGetValue(propertyId, out var lastSite)
+                ? sites.Where(s => s > lastSite).Concat(sites.Where(s => s <= lastSite)).ToList()
+                : sites;
+            var carried = _remaining.TryRemove(propertyId, out var left) && left.MarkSequence == markSequence
+                                                                          && left.DayKey == dayKey
+                ? left
+                : null;
+            var round = carried is { } c ? rotation.Where(c.Sites.Contains).ToList() : rotation;
+            // A calendar failure anywhere in the round, also in an earlier pass, defers the property to
+            // the minute sweep when the round ends.
+            var failed = carried?.Failed ?? false;
+            var unread = new List<int>();
+            if (round.Count > 0 && AbandonedReads > 0)
+            {
+                unread.AddRange(round); // the database is slow: wait for the abandoned read to end
+            }
+            else if (round.Count > 0)
+            {
+                var languages = await SiteLanguagesAsync(services, round, cancellationToken).ConfigureAwait(false);
+                var calendar = services.GetRequiredService<IBackendConfigurationCalendarService>();
+                // The planner only reads: nothing it might write is announced, and it never deploys.
+                using var readPath = services.GetService<ILiveChanges>()?.BeginReadPath();
+                for (var i = 0; i < round.Count; i++)
+                {
+                    if (i > 0 && budget != null && budget.Elapsed > options.PassBudget)
+                    {
+                        unread.AddRange(round.Skip(i));
+                        break;
+                    }
+
+                    var site = round[i];
+                    _lastSite[propertyId] = site;
+                    var days = existing.Where(e => e.Key == dayKey || e.Value[site].Any()).Select(e => e.Key).ToList();
+                    var (languageId, languageCode) = languages[site];
+                    try
+                    {
+                        foreach (var key in days)
+                        {
+                            var result = await ReadBoundedAsync(calendar.GetTasksForWeek(
+                                EventsGrpcService.WorkerTaskListRequest(propertyId, key, key, site, languageId))).ConfigureAwait(false);
+                            if (!result.Success || result.Model == null)
+                            {
+                                failed = true; // this worker's rows are left as they are
+                                break;
+                            }
+
+                            var keyDay = DateOnly.ParseExact(key, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+                            var present = Candidates(result.Model, keyDay, zone).Select(task =>
+                            {
+                                var (title, body) = TaskReminderText.Render(languageCode, task.Title, task.LocalStart, property!.Name);
+                                return new TaskNotificationPlan(site, propertyId, task.EventId, key, task.ComplianceId,
+                                    TaskNotificationKinds.TaskDue, task.PlannedStartUtc, task.PlannedStartUtc - options.Lead,
+                                    title, body);
+                            }).ToList();
+                            if (await DiffWorkerAsync(db, site, present, existing[key][site], now, cancellationToken)
+                                    .ConfigureAwait(false))
+                            {
+                                redo.Add(site);
+                            }
+                        }
+                    }
+                    catch (TimeoutException) when (abandoned != null)
+                    {
+                        // Past its deadline: kept for a later pass. Nothing more on this property now,
+                        // because the abandoned read still uses this scope's context.
+                        logger.LogDebug("Task reminder planner: the task list of site {SdkSiteId} on property {PropertyId} took too long; later",
+                            site, propertyId);
+                        redo.Add(site);
+                        unread.AddRange(round.Skip(i + 1));
+                        break;
+                    }
+                    catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+                    {
+                        failed = true;
+                        logger.LogDebug(e, "Task reminder planner: site {SdkSiteId} on property {PropertyId} failed", site, propertyId);
+                    }
+                }
+            }
+
+            var leftOver = unread.Concat(redo).ToHashSet();
+            if (leftOver.Count > 0)
+            {
+                // Prompt: workers not reached and outbox rows in flight are planned in a later pass.
+                _remaining[propertyId] = new Carry(leftOver, markSequence, dayKey, failed);
+                signals.Requeue(propertyId);
+                return false;
+            }
+
+            if (failed)
+            {
+                // Not retried every pass: the minute sweep re-plans a property with no recent plan.
+                _lastPlanned.TryRemove(propertyId, out _);
+                WarnOncePerHour(propertyId, null);
+            }
+            else
+            {
+                _lastPlanned[propertyId] = (now, dayKey);
+            }
+
+            return !signals.IsDirty(propertyId);
+        }
+        finally
+        {
+            if (abandoned is null)
+                await scope.DisposeAsync().ConfigureAwait(false);
+            else
+                _ = EndAbandonedAsync(abandoned, scope);
         }
 
-        var unfinished = _remaining.ContainsKey(propertyId);
-        if (failed)
+        // GetTasksForWeek takes no token (giving it one is a wide signature change for its other
+        // callers), so the read is bounded from the outside: a wall-clock deadline and the stopping token.
+        async Task<OperationDataResult<List<CalendarTaskResponseModel>>> ReadBoundedAsync(
+            Task<OperationDataResult<List<CalendarTaskResponseModel>>> read)
         {
-            // Not retried every pass: the minute sweep re-plans a property with no recent plan.
-            _lastPlanned.TryRemove(propertyId, out _);
-            WarnOncePerHour(propertyId, null);
+            try
+            {
+                return await read.WaitAsync(options.WorkerReadTimeout, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception) when (!read.IsCompleted)
+            {
+                abandoned = read;
+                Interlocked.Increment(ref _abandonedReads);
+                throw;
+            }
         }
-        else if (!unfinished)
+    }
+
+    /// <summary>
+    /// Waits for an abandoned read to end, observes its outcome (no unobserved fault), then frees its
+    /// scope and lets reads start again. Never throws.
+    /// </summary>
+    private async Task EndAbandonedAsync(Task read, AsyncServiceScope scope)
+    {
+        try
         {
-            _lastPlanned[propertyId] = (now, dayKey);
+            await read.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            logger.LogDebug(e, "Task reminder planner: an abandoned calendar read ended with an error");
         }
 
-        // Workers left for the next pass, or rows in flight (the outbox's contract): plan again soon.
-        if (unfinished || retry) signals.Requeue(propertyId);
-        return !unfinished && !retry;
+        try
+        {
+            await scope.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            logger.LogDebug(e, "Task reminder planner: disposing an abandoned read's scope failed");
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _abandonedReads);
+        }
+    }
+
+    /// <summary>
+    /// Outbox rows a plan may still have to change: Pending, Sending or Sent, for a start within the
+    /// last 24 h (a withdraw later than that is pointless; the service's withdraw expires then too).
+    /// </summary>
+    private static IQueryable<TaskNotification> OutstandingRows(BackendConfigurationPnDbContext db, DateTime now)
+    {
+        var since = now - TimeSpan.FromHours(24);
+        return db.TaskNotifications.AsNoTracking()
+            .Where(n => (n.State == TaskNotificationState.Pending || n.State == TaskNotificationState.Sending
+                         || n.State == TaskNotificationState.Sent)
+                        && n.PlannedStartUtc > since);
     }
 
     /// <summary>

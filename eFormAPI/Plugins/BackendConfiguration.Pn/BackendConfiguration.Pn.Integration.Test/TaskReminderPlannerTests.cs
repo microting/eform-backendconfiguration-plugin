@@ -22,6 +22,7 @@ using Microsoft.Extensions.Time.Testing;
 using Microting.eForm.Infrastructure.Constants;
 using Microting.eForm.Infrastructure.Data.Entities;
 using Microting.eFormApi.BasePn.Abstractions;
+using Microting.eFormApi.BasePn.Infrastructure.Models.API;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data;
 using Microting.EformBackendConfigurationBase.Infrastructure.Data.Entities;
 using Microting.EformBackendConfigurationBase.Infrastructure.Enum;
@@ -141,7 +142,7 @@ public class TaskReminderPlannerTests : TestBaseSetup
     {
         await new DeviceToken
         {
-            AppId = "eform", InstallationId = Guid.NewGuid().ToString(), FcmToken = "fcm-" + Guid.NewGuid(),
+            AppId = "eform", InstallationId = Guid.NewGuid().ToString(), FcmToken = Guid.NewGuid().ToString("N"),
             SdkSiteId = site, Platform = "android", TaskReminders = optedIn
         }.Create(BackendConfigurationPnDbContext!);
     }
@@ -222,8 +223,16 @@ public class TaskReminderPlannerTests : TestBaseSetup
             new WorkerTagMembershipService(coreHelper, bc));
     }
 
-    private LiveChangeTestHost NewHost(World w, bool connected = true, int? throwForProperty = null) =>
-        new(ConnectionStringFor("420_eform-backend-configuration-plugin"),
+    /// <summary>Wraps a calendar read: gets the request and the real read, returns what the planner sees.</summary>
+    private delegate Task<OperationDataResult<List<CalendarTaskResponseModel>>> CalendarHook(CalendarTaskRequestModel model,
+        Func<Task<OperationDataResult<List<CalendarTaskResponseModel>>>> real);
+
+    private LiveChangeTestHost NewHost(World w, bool connected = true, int? throwForProperty = null,
+        CalendarHook? hook = null, Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[]? interceptors = null)
+    {
+        if (throwForProperty is { } bad)
+            hook = (model, real) => model.PropertyId == bad ? throw new InvalidOperationException("calendar broken") : real();
+        return new(ConnectionStringFor("420_eform-backend-configuration-plugin"),
             ConnectionStringFor("420_eform-angular-items-planning-plugin"), w.Core,
             s =>
             {
@@ -231,17 +240,18 @@ public class TaskReminderPlannerTests : TestBaseSetup
                 {
                     var real = NewCalendar(w, sp.GetRequiredService<BackendConfigurationPnDbContext>(),
                         sp.GetRequiredService<ItemsPlanningPnDbContext>());
-                    if (throwForProperty is not { } bad) return real;
+                    if (hook is null) return real;
                     var calendar = Substitute.For<IBackendConfigurationCalendarService>();
                     calendar.GetTasksForWeek(Arg.Any<CalendarTaskRequestModel>()).Returns(ci =>
                     {
                         var model = ci.Arg<CalendarTaskRequestModel>();
-                        return model.PropertyId == bad ? throw new InvalidOperationException("calendar broken") : real.GetTasksForWeek(model);
+                        return hook(model, () => real.GetTasksForWeek(model));
                     });
                     return calendar;
                 });
                 s.AddSingleton(_signals);
-            }, connected);
+            }, connected, interceptors);
+    }
 
     private TaskReminderPlanner NewPlanner(LiveChangeTestHost host) =>
         new(host.Provider.GetRequiredService<IServiceScopeFactory>(), _signals, _options, _clock,
@@ -656,6 +666,209 @@ public class TaskReminderPlannerTests : TestBaseSetup
             "every worker was read within ceil(N/K) passes");
     }
 
+    /// <summary>Other tests of this fixture leave outbox rows behind; an idle-sweep test starts from a quiet outbox.</summary>
+    private async Task QuietOutboxAsync()
+    {
+        await using var db = CreateFreshBackendConfigurationDbContext();
+        await db.TaskNotifications.ExecuteUpdateAsync(u => u.SetProperty(n => n.State, TaskNotificationState.Cancelled));
+    }
+
+    // ------------------------------------------------------------------ PR #1530 Copilot round
+
+    [Test]
+    public async Task Copilot380_RowsLeftAfterTheLastOptOut_AreFoundByTheSweep_AndTheIdleSweepStaysOneQuery()
+    {
+        await QuietOutboxAsync();
+        var w = await SeedWorldAsync();
+        await SeedDailySeriesAsync(w, 9.0, "Task");
+        var commands = new CountingCommands();
+        using var host = NewHost(w, interceptors: [commands]);
+        using (var before = NewPlanner(host))
+        {
+            await before.PlanPropertyAsync(w.PropertyId, CancellationToken.None);
+        }
+
+        Assert.That((await RowsAsync(w)).Single().State, Is.EqualTo(TaskNotificationState.Pending));
+        await using (var db = CreateFreshBackendConfigurationDbContext())
+        {
+            await db.DeviceTokens.ExecuteUpdateAsync(u => u.SetProperty(t => t.TaskReminders, false)); // everyone opts out
+        }
+
+        using var planner = NewPlanner(host); // a restart: no mark survives
+        await planner.SweepAsync(CancellationToken.None);
+        Assert.That(_signals.IsDirty(w.PropertyId), Is.True, "outstanding rows are rediscovered");
+        await planner.RunPassAsync(CancellationToken.None);
+        Assert.That((await RowsAsync(w)).Single().State, Is.EqualTo(TaskNotificationState.Cancelled));
+
+        await planner.SweepAsync(CancellationToken.None); // nothing outstanding any more
+        commands.Reset();
+        await planner.SweepAsync(CancellationToken.None);
+        Assert.That(commands.Count, Is.EqualTo(1), "idle: one cheap query a minute");
+    }
+
+    [Test]
+    public async Task Copilot508_AReminderOfYesterday_IsWithdrawnWhenItsTaskGoes_AndKeptWhileItsTaskIsOpen()
+    {
+        var w = await SeedWorldAsync();
+        var finished = await SeedDailySeriesAsync(w, 23.0 + 55.0 / 60, "Late, finished");
+        var open = await SeedDailySeriesAsync(w, 23.0 + 50.0 / 60, "Late, still open");
+        using var host = NewHost(w);
+        using var planner = NewPlanner(host);
+        _clock.SetUtcNow(new DateTimeOffset(Utc(23.5), TimeSpan.Zero)); // 23:30 on day D
+        await planner.PlanPropertyAsync(w.PropertyId, CancellationToken.None);
+        foreach (var row in await RowsAsync(w)) await SetStateAsync(row.Id, TaskNotificationState.Sent);
+
+        _clock.SetUtcNow(new DateTimeOffset(TaskReminderTime.ToUtc(Day.AddDays(1), 1.0 / 60, Zone), TimeSpan.Zero)); // 00:01
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.SingleAsync(x => x.Id == finished.ArpId);
+        await arp.Delete(BackendConfigurationPnDbContext);
+        await planner.PlanPropertyAsync(w.PropertyId, CancellationToken.None);
+
+        var rows = (await RowsAsync(w)).Where(r => r.PlanDayKey == DayKey).ToList();
+        Assert.That(rows.Single(r => r.AreaRulePlanningId == finished.ArpId).State, Is.EqualTo(TaskNotificationState.WithdrawPending),
+            "yesterday's reminder of a task that went away is withdrawn");
+        Assert.That(rows.Single(r => r.AreaRulePlanningId == open.ArpId).State, Is.EqualTo(TaskNotificationState.Sent),
+            "a shown reminder stays while its task is open (owner decision)");
+    }
+
+    [Test]
+    public async Task Copilot540_AFailedWorkerOfAnEarlierPass_KeepsTheRoundUnfinishedForTheSweep()
+    {
+        var w = await SeedWorldAsync(extraOptedInWorkers: 1);
+        await SeedDailySeriesAsync(w, 9.0, "Task");
+        var failing = new[] { w.SiteA, w.Extra[0] }.Min(); // read first
+        using var host = NewHost(w, hook: (model, real) => model.SiteIds.Contains(failing)
+            ? Task.FromResult(new OperationDataResult<List<CalendarTaskResponseModel>>(false, "broken"))
+            : real());
+        using var planner = NewPlanner(host);
+        _options.PassBudget = TimeSpan.Zero; // one worker per pass
+
+        _signals.MarkProperty(w.PropertyId);
+        await planner.RunPassAsync(CancellationToken.None); // the failing worker
+        await planner.RunPassAsync(CancellationToken.None); // the other one: the round ends here
+        await planner.SweepAsync(CancellationToken.None);
+
+        Assert.That(_signals.IsDirty(w.PropertyId), Is.True, "the failure of pass 1 is not forgotten: the sweep retries now, not in 15 minutes");
+    }
+
+    [Test]
+    public async Task Copilot540_ARetryOfAnEarlierPass_IsPlannedAgainPromptly()
+    {
+        var w = await SeedWorldAsync(extraOptedInWorkers: 1);
+        var s = await SeedDailySeriesAsync(w, 9.0, "Task");
+        using var host = NewHost(w);
+        using var planner = NewPlanner(host);
+        await planner.PlanPropertyAsync(w.PropertyId, CancellationToken.None);
+        var first = new[] { w.SiteA, w.Extra[0] }.Min();
+        var inFlight = (await RowsAsync(w)).Single(r => r.SdkSiteId == first);
+        await SetStateAsync(inFlight.Id, TaskNotificationState.Sending); // a deliverer holds the first worker's row
+        var arp = await BackendConfigurationPnDbContext!.AreaRulePlannings.SingleAsync(x => x.Id == s.ArpId);
+        await arp.Delete(BackendConfigurationPnDbContext);
+        _options.PassBudget = TimeSpan.Zero;
+
+        _signals.MarkProperty(w.PropertyId);
+        await planner.RunPassAsync(CancellationToken.None); // first worker: RetryIds (in flight)
+        await planner.RunPassAsync(CancellationToken.None); // second worker: done
+        Assert.That(_signals.IsDirty(w.PropertyId), Is.True, "the first worker's retry is still queued");
+
+        await SetStateAsync(inFlight.Id, TaskNotificationState.Pending); // the deliverer gave it back
+        await planner.RunPassAsync(CancellationToken.None);
+        Assert.That((await RowsAsync(w)).Single(r => r.Id == inFlight.Id).State, Is.EqualTo(TaskNotificationState.Cancelled));
+    }
+
+    [Test]
+    public async Task Copilot550_ASlowCalendarRead_IsBounded_AndTheWorkerIsKeptForALaterPass()
+    {
+        var w = await SeedWorldAsync();
+        await SeedDailySeriesAsync(w, 9.0, "Task");
+        var slow = true;
+        using var host = NewHost(w, hook: async (model, real) =>
+        {
+            if (slow) await Task.Delay(TimeSpan.FromSeconds(10));
+            return await real();
+        });
+        using var planner = NewPlanner(host);
+        _options.WorkerReadTimeout = TimeSpan.FromMilliseconds(300);
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.That(await planner.PlanPropertyAsync(w.PropertyId, CancellationToken.None), Is.False);
+        Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)), "bounded by the per-worker deadline");
+        Assert.That(_signals.IsDirty(w.PropertyId), Is.True, "the worker is kept for a later pass");
+        Assert.That(await RowsAsync(w), Is.Empty);
+
+        slow = false;
+        // No new read starts while the abandoned one still runs (at most one at a time).
+        var until = DateTime.UtcNow.AddSeconds(20);
+        while (planner.AbandonedReads > 0 && DateTime.UtcNow < until) await Task.Delay(100);
+        await planner.RunPassAsync(CancellationToken.None);
+        Assert.That(await RowsAsync(w), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Copilot550_StoppingTheHost_InterruptsASlowCalendarRead()
+    {
+        var w = await SeedWorldAsync();
+        await SeedDailySeriesAsync(w, 9.0, "Task");
+        using var host = NewHost(w, hook: async (model, real) =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            return await real();
+        });
+        using var planner = NewPlanner(host);
+        using var stop = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        Assert.That(async () => await planner.PlanPropertyAsync(w.PropertyId, stop.Token), Throws.InstanceOf<OperationCanceledException>());
+        Assert.That(watch.Elapsed, Is.LessThan(TimeSpan.FromSeconds(5)));
+    }
+
+    [Test]
+    public async Task AtMostOneAbandonedCalendarRead_RunsAtATime_AndPlanningResumesWhenItEnds()
+    {
+        var w = await SeedWorldAsync();
+        await SeedDailySeriesAsync(w, 9.0, "Task");
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reads = 0;
+        using var host = NewHost(w, hook: async (model, real) =>
+        {
+            Interlocked.Increment(ref reads);
+            await gate.Task; // the database hangs
+            return await real();
+        });
+        using var planner = NewPlanner(host);
+        _options.WorkerReadTimeout = TimeSpan.FromMilliseconds(200);
+
+        _signals.MarkProperty(w.PropertyId);
+        await planner.RunPassAsync(CancellationToken.None); // times out: one read abandoned
+        for (var pass = 0; pass < 3; pass++) await planner.RunPassAsync(CancellationToken.None);
+
+        Assert.That(Volatile.Read(ref reads), Is.EqualTo(1), "no new read while the abandoned one still runs");
+        Assert.That(_signals.IsDirty(w.PropertyId), Is.True, "the work waits, it is not dropped");
+
+        gate.SetResult(); // the database answers again
+        var until = DateTime.UtcNow.AddSeconds(20);
+        while (planner.AbandonedReads > 0 && DateTime.UtcNow < until) await Task.Delay(50);
+        Assert.That(planner.AbandonedReads, Is.Zero);
+
+        await planner.RunPassAsync(CancellationToken.None);
+        Assert.That(await RowsAsync(w), Has.Count.EqualTo(1), "planning resumed");
+    }
+
+    private sealed class CountingCommands : Microsoft.EntityFrameworkCore.Diagnostics.DbCommandInterceptor
+    {
+        private int _count;
+        public int Count => Volatile.Read(ref _count);
+        public void Reset() => Interlocked.Exchange(ref _count, 0);
+
+        public override ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader>> ReaderExecutingAsync(
+            System.Data.Common.DbCommand command, Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData eventData,
+            Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<System.Data.Common.DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            Interlocked.Increment(ref _count);
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
+    }
+
     // ------------------------------------------------------------------ sweep and passes
 
     [Test]
@@ -694,6 +907,7 @@ public class TaskReminderPlannerTests : TestBaseSetup
             await db.DeviceTokens.ExecuteUpdateAsync(u => u.SetProperty(t => t.TaskReminders, false));
         }
 
+        await QuietOutboxAsync();
         using var host = NewHost(w);
         using var planner = NewPlanner(host);
         _signals.AnyOptedIn = true;

@@ -43,7 +43,7 @@ public class TaskReminderOptInTests : TestBaseSetup
     {
         var request = new RegisterPushTokenRequest
         {
-            FcmToken = "token-" + install, Platform = "android", AppId = "eform", InstallationId = install
+            FcmToken = Guid.NewGuid().ToString("N"), Platform = "android", AppId = "eform", InstallationId = install
         };
         if (taskReminders is { } value) request.TaskReminders = value;
         return request;
