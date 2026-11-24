@@ -978,7 +978,7 @@ public class EventsGrpcContractTests : TestBaseSetup
             {
                 "request_id", "remove_photo_expected_storage_id", "write_reply_compliance_id",
                 "get_event", "event_version", "event_etag", "event_due_local", "list_changes",
-                "live_hub"
+                "live_hub", "task_notifications"
             }));
         });
     }

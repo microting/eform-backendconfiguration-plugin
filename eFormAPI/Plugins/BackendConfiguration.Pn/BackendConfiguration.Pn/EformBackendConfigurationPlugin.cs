@@ -104,6 +104,7 @@ using Services.Leder;
 using Services.PluginMenuSyncService;
 using Services.LiveChanges;
 using Services.LiveFeed;
+using Services.TaskReminders;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -132,6 +133,8 @@ public class EformBackendConfigurationPlugin : IEformPlugin
         services.AddBackendConfigurationLiveChanges();
         // ... and the reader of the background service's change feed (a hosted service).
         services.AddBackendConfigurationLiveFeed();
+        // Task reminders (package 12): the planner that fills the outbox the service delivers.
+        services.AddBackendConfigurationTaskReminders();
         services.AddTransient<Services.UserPropertyAccess.IBackendConfigurationUserPropertyAccess,
             Services.UserPropertyAccess.BackendConfigurationUserPropertyAccess>();
         services.AddTransient<Services.GrpcServices.IGrpcSiteResolver,

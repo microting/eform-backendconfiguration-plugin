@@ -162,7 +162,8 @@ public sealed class LiveFeedReader(
     /// </summary>
     internal async Task<int> PollOnceAsync(CancellationToken cancellationToken)
     {
-        if (!registry.HasConnections)
+        // Idle unless a hub client is connected or an install has task reminders on (package 12).
+        if (!registry.HasConnections && !publisher.WantsChanges)
         {
             // Idle: no query. The first poll after a connect starts afresh at the last id.
             Cursor = null;

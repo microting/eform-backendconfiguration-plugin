@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace BackendConfiguration.Pn.Services.LiveChanges;
@@ -173,9 +174,11 @@ public sealed class LiveChangeInterceptor(
         _pending.Remove(context);
         try
         {
-            var audience = publisher.HasAudience;
-            var target = audience ? targets.For(context) : null;
-            var pending = new Pending(target, revocationRowsOnly: !audience || target?.IsReadPath == true);
+            // Revocations are always captured; everything else only while changes are wanted
+            // (a hub client is connected, or an install has task reminders on).
+            var wanted = publisher.WantsChanges;
+            var target = wanted ? targets.For(context) : null;
+            var pending = new Pending(target, revocationRowsOnly: !wanted || target?.IsReadPath == true);
             var tracker = context.ChangeTracker;
             if (tracker.AutoDetectChangesEnabled)
             {
@@ -308,6 +311,7 @@ public static class LiveChangeRegistration
         services.AddHttpContextAccessor();
         services.AddSingleton<LiveChangeWarnings>();
         services.AddSingleton<ILiveChangeResolver, LiveChangeResolver>();
+        services.TryAddSingleton<TaskReminders.TaskReminderSignals>(); // the publisher's reminder gate (package 12)
         services.AddSingleton<LiveChangePublisher>();
         services.AddSingleton<ILiveChangeTargets, LiveChangeTargets>();
         services.AddSingleton<LiveChangeInterceptor>();

@@ -49,7 +49,10 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 public class SettingsGrpcService(
     BackendConfigurationPnDbContext dbContext,
     IGrpcSiteResolver siteResolver,
-    ILogger<SettingsGrpcService> logger)
+    ILogger<SettingsGrpcService> logger,
+    // Package 12: a registration that turns task reminders on or off re-plans the worker.
+    // Optional so fixtures that build this class directly need not supply it; DI always does.
+    BackendConfiguration.Pn.Services.TaskReminders.TaskReminderSignals reminders = null)
     : Settings.SettingsBase
 {
     public override async Task<RegisterPushTokenResponse> RegisterPushToken(
@@ -65,8 +68,18 @@ public class SettingsGrpcService(
         // Platform is stored exactly as sent ("android"/"ios"/"unknown").
         var platform = request.Platform ?? string.Empty;
 
+        // Task reminders (package 12): only a request that carries the field changes the choice;
+        // every older app leaves it as it is (false for a new row).
+        bool? taskReminders = request.HasTaskReminders ? request.TaskReminders : null;
         await UpsertRetryingOnceAsync(
-            () => UpsertPushTokenAsync(appId, installationId, fcmToken, sdkSiteId, platform)).ConfigureAwait(false);
+            () => UpsertPushTokenAsync(appId, installationId, fcmToken, sdkSiteId, platform, taskReminders)).ConfigureAwait(false);
+
+        if (taskReminders is { } wanted && reminders != null)
+        {
+            // Opening the capture gate at once; the planner's sweep keeps it in step afterwards.
+            if (wanted) reminders.AnyOptedIn = true;
+            reminders.MarkSite(sdkSiteId); // plan (or retract) this worker's reminders now
+        }
 
         return new RegisterPushTokenResponse();
     }
@@ -90,7 +103,7 @@ public class SettingsGrpcService(
     }
 
     private async Task UpsertPushTokenAsync(string appId, string installationId, string fcmToken, int sdkSiteId,
-        string platform)
+        string platform, bool? taskReminders = null)
     {
         // No WorkflowState filter here — soft-deleted rows MUST be found and
         // revived via Update(); see the class doc / the base repo's index note.
@@ -131,6 +144,7 @@ public class SettingsGrpcService(
             existing.SdkSiteId = sdkSiteId;
             existing.Platform = platform;
             existing.WorkflowState = Constants.WorkflowStates.Created;
+            if (taskReminders is { } value) existing.TaskReminders = value;
             await existing.Update(dbContext).ConfigureAwait(false);
 
             // A device usually re-registers the same token, and EF leaves an unchanged
@@ -157,7 +171,8 @@ public class SettingsGrpcService(
                 InstallationId = installationId,
                 FcmToken = fcmToken,
                 SdkSiteId = sdkSiteId,
-                Platform = platform
+                Platform = platform,
+                TaskReminders = taskReminders ?? false
             };
             await deviceToken.Create(dbContext).ConfigureAwait(false);
             existing = deviceToken;

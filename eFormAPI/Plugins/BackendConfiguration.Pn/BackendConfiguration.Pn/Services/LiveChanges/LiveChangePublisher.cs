@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Hubs;
 using BackendConfiguration.Pn.Services.LiveNotifier;
 using Microsoft.Extensions.Logging;
+using BackendConfiguration.Pn.Services.TaskReminders;
 
 namespace BackendConfiguration.Pn.Services.LiveChanges;
 
@@ -34,8 +35,19 @@ public sealed class LiveChangePublisher(
     ILiveChangeResolver resolver,
     LiveConnectionRegistry registry,
     LiveChangeWarnings warnings,
-    ILogger<LiveChangePublisher> logger)
+    ILogger<LiveChangePublisher> logger,
+    // Package 12: task reminders also want changes when no hub client is connected.
+    TaskReminderSignals reminders)
 {
+    /// <summary>
+    /// True while changes are wanted at all: a hub client is connected, or an eForm install has task
+    /// reminders turned on (package 12: the planner needs the dirty properties even with no hub
+    /// client). While false a save captures nothing but PropertyWorker rows.
+    /// </summary>
+    public bool WantsChanges => HasAudience || reminders.AnyOptedIn;
+
+    private bool Planning => reminders.AnyOptedIn;
+
     private readonly ConcurrentDictionary<Task, byte> _inFlight = new();
 
     /// <summary>
@@ -53,7 +65,9 @@ public sealed class LiveChangePublisher(
     public IReadOnlyList<LiveChange> ApplyRevocations(IEnumerable<LiveChange> changes)
     {
         var rest = new List<LiveChange>();
-        if (!HasAudience) return rest;
+        var audience = HasAudience;
+        var planning = Planning;
+        if (!audience && !planning) return rest;
         foreach (var change in changes)
         {
             try
@@ -61,16 +75,19 @@ public sealed class LiveChangePublisher(
                 switch (change)
                 {
                     case { Kind: LiveChangeKind.RevokeProperty, SdkSiteId: { } site, PropertyId: { } property }:
-                        Track(notifier.RevokePropertyAccessAsync(site, property));
+                        if (planning) reminders.MarkProperty(property); // the worker's reminders there are retracted
+                        if (audience) Track(notifier.RevokePropertyAccessAsync(site, property));
                         continue;
                     case { Kind: LiveChangeKind.RevokeSite, SdkSiteId: { } sdkSite }:
-                        Track(notifier.RevokeSiteAsync(sdkSite));
+                        if (planning) reminders.MarkSite(sdkSite);
+                        if (audience) Track(notifier.RevokeSiteAsync(sdkSite));
                         continue;
                     case { Kind: LiveChangeKind.RevokePropertyForEveryone, PropertyId: { } removedProperty }:
-                        Track(notifier.RevokePropertyForEveryoneAsync(removedProperty));
+                        if (planning) reminders.MarkProperty(removedProperty);
+                        if (audience) Track(notifier.RevokePropertyForEveryoneAsync(removedProperty));
                         continue;
                     case { Kind: LiveChangeKind.RevokeUser, UserId: { } user }:
-                        Track(notifier.RevokeUserAsync(user));
+                        if (audience) Track(notifier.RevokeUserAsync(user));
                         continue;
                 }
             }
@@ -127,15 +144,28 @@ public sealed class LiveChangePublisher(
     /// <summary>Resolves, coalesces and sends one flush. Never throws.</summary>
     public async Task PublishAsync(IReadOnlyList<LiveChange> changes)
     {
-        if (!HasAudience) return;
+        if (!WantsChanges) return;
         try
         {
             // Revocations never get here: they carry their ids and ApplyRevocations ran them
             // at commit, so no lookup (which can fail) stands between a change and its revoke.
             var lookups = await LoadLookupsAsync(changes).ConfigureAwait(false);
+            var hints = Resolve(changes, lookups);
+
+            // 0. Task reminders: every resolved property (and every worker whose assignments
+            // changed) is planned again, hub client or not.
+            if (Planning)
+            {
+                foreach (var propertyId in hints.Select(h => h.PropertyId).Distinct()) reminders.MarkProperty(propertyId);
+                foreach (var site in changes.Where(c => c.Kind == LiveChangeKind.Assignments)
+                             .Select(c => c.SdkSiteId).OfType<int>().Distinct())
+                    reminders.MarkSite(site);
+            }
+
+            if (!HasAudience) return;
 
             // 1. Task hints.
-            foreach (var hint in Coalesce(Resolve(changes, lookups)))
+            foreach (var hint in Coalesce(hints))
             {
                 await SendAsync(() => notifier.TaskChangedAsync(hint.PropertyId, hint.EventId, hint.PlanDay,
                     hint.ComplianceId, hint.Kind)).ConfigureAwait(false);

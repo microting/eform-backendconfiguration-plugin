@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Hubs;
 using BackendConfiguration.Pn.Services.LiveChanges;
+using BackendConfiguration.Pn.Services.TaskReminders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -34,7 +35,7 @@ public class LiveChangeCollectorTests
         resolver.LoadAsync(default!, default).ReturnsForAnyArgs(LiveChangeLookups.Empty);
         _publisher = new LiveChangePublisher(_notifier, resolver, LiveChangePublisherTests.ConnectedRegistry(),
             new LiveChangeWarnings(),
-            NullLogger<LiveChangePublisher>.Instance);
+            NullLogger<LiveChangePublisher>.Instance, new TaskReminderSignals());
         _root = new ServiceCollection()
             .AddSingleton(_publisher)
             .AddSingleton(new LiveChangeWarnings())
@@ -177,7 +178,7 @@ public class LiveChangeCollectorTests
         var resolver = Substitute.For<ILiveChangeResolver>();
         resolver.LoadAsync(default!, default).ThrowsAsyncForAnyArgs(new InvalidOperationException("db down"));
         var publisher = new LiveChangePublisher(_notifier, resolver, LiveChangePublisherTests.ConnectedRegistry(),
-            new LiveChangeWarnings(), NullLogger<LiveChangePublisher>.Instance);
+            new LiveChangeWarnings(), NullLogger<LiveChangePublisher>.Instance, new TaskReminderSignals());
         var collector = new LiveChangeCollector(_root, publisher, new LiveChangeWarnings(),
             NullLogger<LiveChangeCollector>.Instance);
 

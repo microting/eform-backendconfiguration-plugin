@@ -61,6 +61,25 @@ public partial class EventsGrpcService
     /// PropertyWorkers rows ListEvents checks), read like ListEvents and
     /// hydrated per occurrence, diffed against the cursor.
     /// </summary>
+    /// <summary>
+    /// The calendar read behind a worker's task list (ListEvents, ListChanges, and the task reminder
+    /// planner, which must see exactly what the app lists): one property, a day window, only the
+    /// tasks assigned to the worker's own site (#931), actionable rows only, titles in the worker's
+    /// language.
+    /// </summary>
+    internal static CalendarTaskRequestModel WorkerTaskListRequest(int propertyId, string fromDateKey, string toDateKey,
+        int sdkSiteId, int? languageId, List<int>? boardIds = null) => new()
+    {
+        PropertyId = propertyId,
+        WeekStart = fromDateKey,
+        WeekEnd = toDateKey,
+        BoardIds = boardIds ?? [],
+        TagNames = [],
+        SiteIds = [sdkSiteId],
+        ActionableOnly = true,
+        LanguageId = languageId
+    };
+
     public override async Task<ListChangesResponse> ListChanges(
         ListChangesRequest request,
         ServerCallContext context)
@@ -397,18 +416,9 @@ public partial class EventsGrpcService
     private async Task<List<CalendarTaskResponseModel>> ReadCalendarAsync(
         int propertyId, DateOnly start, DateOnly end, int sdkSiteId, int? languageId)
     {
-        var result = await calendarService.GetTasksForWeek(new CalendarTaskRequestModel
-        {
-            PropertyId = propertyId,
-            WeekStart = start.ToString(DateKeyFormat, CultureInfo.InvariantCulture),
-            WeekEnd = end.ToString(DateKeyFormat, CultureInfo.InvariantCulture),
-            BoardIds = [],
-            TagNames = [],
-            // #931: only events assigned to the caller's own site.
-            SiteIds = [sdkSiteId],
-            ActionableOnly = true,
-            LanguageId = languageId
-        }).ConfigureAwait(false);
+        var result = await calendarService.GetTasksForWeek(WorkerTaskListRequest(propertyId,
+            start.ToString(DateKeyFormat, CultureInfo.InvariantCulture),
+            end.ToString(DateKeyFormat, CultureInfo.InvariantCulture), sdkSiteId, languageId)).ConfigureAwait(false);
 
         if (!result.Success || result.Model == null)
         {

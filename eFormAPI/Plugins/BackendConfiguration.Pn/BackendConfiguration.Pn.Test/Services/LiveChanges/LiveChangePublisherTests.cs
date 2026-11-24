@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BackendConfiguration.Pn.Hubs;
 using BackendConfiguration.Pn.Services.LiveNotifier;
 using BackendConfiguration.Pn.Services.LiveChanges;
+using BackendConfiguration.Pn.Services.TaskReminders;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -45,7 +46,7 @@ public class LiveChangePublisherTests
         pairs.Count == 1 && pairs.First().PlanningId == planningId && pairs.First().PropertyId == propertyId;
 
     private LiveChangePublisher NewPublisher() =>
-        new(_notifier, _resolver, _registry, new LiveChangeWarnings(), _logger);
+        new(_notifier, _resolver, _registry, new LiveChangeWarnings(), _logger, new TaskReminderSignals());
 
     [SetUp]
     public void SetUp()

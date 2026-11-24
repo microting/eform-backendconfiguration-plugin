@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BackendConfiguration.Pn.Hubs;
 using BackendConfiguration.Pn.Services.LiveChanges;
+using BackendConfiguration.Pn.Services.TaskReminders;
 using Microsoft.EntityFrameworkCore;
 using Microting.eForm.Infrastructure.Constants;
 using NSubstitute;
@@ -52,7 +53,7 @@ public class LiveWebUserRevocationTests
         var resolver = Substitute.For<ILiveChangeResolver>();
         resolver.LoadAsync(default!, default).ReturnsForAnyArgs(LiveChangeLookups.Empty);
         var publisher = new LiveChangePublisher(notifier, resolver, LiveChangePublisherTests.ConnectedRegistry(),
-            new LiveChangeWarnings(), new CountingLogger<LiveChangePublisher>());
+            new LiveChangeWarnings(), new CountingLogger<LiveChangePublisher>(), new TaskReminderSignals());
 
         var rest = publisher.ApplyRevocations(
         [
@@ -75,7 +76,8 @@ public class LiveWebUserRevocationTests
     {
         var notifier = new RecordingLiveNotifier();
         var publisher = new LiveChangePublisher(notifier, Substitute.For<ILiveChangeResolver>(),
-            LiveChangePublisherTests.ConnectedRegistry(), new LiveChangeWarnings(), new CountingLogger<LiveChangePublisher>());
+            LiveChangePublisherTests.ConnectedRegistry(), new LiveChangeWarnings(), new CountingLogger<LiveChangePublisher>(),
+            new TaskReminderSignals());
         using var collector = new LiveChangeCollector(Substitute.For<IServiceProvider>(), publisher, new LiveChangeWarnings(),
             new CountingLogger<LiveChangeCollector>());
 
