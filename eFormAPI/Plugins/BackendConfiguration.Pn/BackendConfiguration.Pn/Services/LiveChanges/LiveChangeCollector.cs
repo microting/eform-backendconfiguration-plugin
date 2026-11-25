@@ -97,7 +97,7 @@ public sealed class LiveChangeCollector(
     /// <summary>Takes committed changes: revocations run now, the rest waits for the flush.</summary>
     internal void Accept(IReadOnlyList<LiveChange> changes)
     {
-        if (!publisher.HasAudience) return;
+        if (!publisher.WantsChanges) return;
         try
         {
             lock (_gate)

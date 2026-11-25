@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Grpc.Core;
@@ -49,7 +50,10 @@ namespace BackendConfiguration.Pn.Services.GrpcServices;
 public class SettingsGrpcService(
     BackendConfigurationPnDbContext dbContext,
     IGrpcSiteResolver siteResolver,
-    ILogger<SettingsGrpcService> logger)
+    ILogger<SettingsGrpcService> logger,
+    // Package 12: a registration that turns task reminders on or off re-plans the worker.
+    // Optional so fixtures that build this class directly need not supply it; DI always does.
+    BackendConfiguration.Pn.Services.TaskReminders.TaskReminderSignals reminders = null)
     : Settings.SettingsBase
 {
     public override async Task<RegisterPushTokenResponse> RegisterPushToken(
@@ -65,8 +69,20 @@ public class SettingsGrpcService(
         // Platform is stored exactly as sent ("android"/"ios"/"unknown").
         var platform = request.Platform ?? string.Empty;
 
-        await UpsertRetryingOnceAsync(
-            () => UpsertPushTokenAsync(appId, installationId, fcmToken, sdkSiteId, platform)).ConfigureAwait(false);
+        // Task reminders (package 12): only a request that carries the field changes the choice;
+        // every older app leaves it as it is (false for a new row).
+        bool? taskReminders = request.HasTaskReminders ? request.TaskReminders : null;
+        ReminderEffect effect = null;
+        await UpsertRetryingOnceAsync(async () =>
+            effect = await UpsertPushTokenAsync(appId, installationId, fcmToken, sdkSiteId, platform, taskReminders)
+                .ConfigureAwait(false)).ConfigureAwait(false);
+
+        if (effect != null && reminders != null)
+        {
+            // Opening the capture gate at once; the planner's sweep keeps it in step afterwards.
+            if (effect.ReceivesNow) reminders.AnyOptedIn = true;
+            foreach (var site in effect.SitesToPlan) reminders.MarkSite(site); // plan (or retract) now
+        }
 
         return new RegisterPushTokenResponse();
     }
@@ -89,9 +105,16 @@ public class SettingsGrpcService(
         }
     }
 
-    private async Task UpsertPushTokenAsync(string appId, string installationId, string fcmToken, int sdkSiteId,
-        string platform)
+    /// <summary>
+    /// What a registration changed for task reminders: the workers to plan again (previous and current
+    /// owner of an install that receives, or received, reminders) and whether the install receives them now.
+    /// </summary>
+    private sealed record ReminderEffect(IReadOnlyCollection<int> SitesToPlan, bool ReceivesNow);
+
+    private async Task<ReminderEffect> UpsertPushTokenAsync(string appId, string installationId, string fcmToken, int sdkSiteId,
+        string platform, bool? taskReminders = null)
     {
+        var sitesToPlan = new HashSet<int>();
         // No WorkflowState filter here — soft-deleted rows MUST be found and
         // revived via Update(); see the class doc / the base repo's index note.
         var existing = await dbContext.DeviceTokens
@@ -124,13 +147,35 @@ public class SettingsGrpcService(
             .FirstOrDefaultAsync()
             .ConfigureAwait(false);
 
+        bool receivesNow;
         if (existing != null)
         {
+            // Before: did this install receive reminders, and for which worker?
+            var previousSite = existing.SdkSiteId;
+            var received = existing.TaskReminders && existing.WorkflowState == Constants.WorkflowStates.Created
+                                                  && !string.IsNullOrEmpty(existing.FcmToken);
             existing.InstallationId = installationId;
             existing.FcmToken = fcmToken;
             existing.SdkSiteId = sdkSiteId;
             existing.Platform = platform;
             existing.WorkflowState = Constants.WorkflowStates.Created;
+            if (taskReminders is { } value)
+            {
+                existing.TaskReminders = value;
+                // Written even when it equals what this request read: an overlapping registration may
+                // have changed it since, and EF would leave an unchanged column out of the UPDATE.
+                dbContext.Entry(existing).Property(t => t.TaskReminders).IsModified = true;
+            }
+
+            receivesNow = existing.TaskReminders && sdkSiteId > 0 && fcmToken.Length > 0;
+            // Absent field: only an install that receives (or received) reminders, and whose owner or
+            // eligibility changed, re-plans; an old app that never opted in stays idle.
+            if (taskReminders.HasValue || ((received || receivesNow) && (previousSite != sdkSiteId || received != receivesNow)))
+            {
+                if (previousSite > 0) sitesToPlan.Add(previousSite);
+                sitesToPlan.Add(sdkSiteId);
+            }
+
             await existing.Update(dbContext).ConfigureAwait(false);
 
             // A device usually re-registers the same token, and EF leaves an unchanged
@@ -157,13 +202,18 @@ public class SettingsGrpcService(
                 InstallationId = installationId,
                 FcmToken = fcmToken,
                 SdkSiteId = sdkSiteId,
-                Platform = platform
+                Platform = platform,
+                TaskReminders = taskReminders ?? false
             };
             await deviceToken.Create(dbContext).ConfigureAwait(false);
             existing = deviceToken;
+            receivesNow = deviceToken.TaskReminders;
+            if (taskReminders.HasValue) sitesToPlan.Add(sdkSiteId);
         }
 
-        await RetireStaleRowsForTokenAsync(appId, fcmToken, existing.Id).ConfigureAwait(false);
+        // Rows retired for holding the same token: their workers lose this device's reminders.
+        sitesToPlan.UnionWith(await RetireStaleRowsForTokenAsync(appId, fcmToken, existing.Id).ConfigureAwait(false));
+        return new ReminderEffect(sitesToPlan, receivesNow);
     }
 
     public override async Task<ReportInstallResponse> ReportInstall(
@@ -292,7 +342,8 @@ public class SettingsGrpcService(
     /// because that very device just registered, so its owner is whoever the
     /// surviving row now names.
     /// </remarks>
-    private async Task RetireStaleRowsForTokenAsync(string appId, string fcmToken, int keptId)
+    /// <summary>Retires the other live rows holding <paramref name="fcmToken"/>; returns the sites of those that received task reminders.</summary>
+    private async Task<IReadOnlyCollection<int>> RetireStaleRowsForTokenAsync(string appId, string fcmToken, int keptId)
     {
         var stale = await dbContext.DeviceTokens
             .Where(t => t.AppId == appId
@@ -306,6 +357,8 @@ public class SettingsGrpcService(
         {
             await row.Delete(dbContext).ConfigureAwait(false);
         }
+
+        return stale.Where(r => r.TaskReminders && r.SdkSiteId > 0).Select(r => r.SdkSiteId).Distinct().ToList();
     }
 
     private static string RequireNonEmpty(string raw, string fieldName)

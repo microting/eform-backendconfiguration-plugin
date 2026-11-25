@@ -221,22 +221,15 @@ public partial class EventsGrpcService(
             sdkSiteId,
             context.CancellationToken);
 
-        var model = new CalendarTaskRequestModel
-        {
-            PropertyId = propertyId,
-            WeekStart = request.FromDateKey ?? string.Empty,
-            WeekEnd = request.ToDateKey ?? string.Empty,
-            BoardIds = TryParseBoardIds(request.BoardIds),
-            TagNames = [],
-            // #931 — scope mobile reads to the caller's own site. The deploy
-            // pass above intentionally enumerates property-wide and narrows
-            // itself; this read, which is what the worker actually sees, must
-            // only return events assigned to their site.
-            SiteIds = [sdkSiteId],
-            ActionableOnly = true,
-            // Serve Title/Description in the worker's own site language.
-            LanguageId = await siteResolver.GetSiteLanguageIdAsync(sdkSiteId)
-        };
+        // #931 — scope mobile reads to the caller's own site. The deploy
+        // pass above intentionally enumerates property-wide and narrows
+        // itself; this read, which is what the worker actually sees, must
+        // only return events assigned to their site. Titles/descriptions in the
+        // worker's own site language. The same request as ListChanges and the
+        // task reminder planner (WorkerTaskListRequest).
+        var model = WorkerTaskListRequest(propertyId, request.FromDateKey ?? string.Empty,
+            request.ToDateKey ?? string.Empty, sdkSiteId,
+            await siteResolver.GetSiteLanguageIdAsync(sdkSiteId), TryParseBoardIds(request.BoardIds));
 
         var result = await calendarService.GetTasksForWeek(model);
 
@@ -286,7 +279,7 @@ public partial class EventsGrpcService(
         var decorated = new List<(Event, CalendarTaskResponseModel)>(deliverable.Count);
         foreach (var task in deliverable)
         {
-            if (!task.Status) continue;
+            if (!IsOnWorkerList(task)) continue;
 
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
 
@@ -1182,7 +1175,7 @@ public partial class EventsGrpcService(
         var decorated = new List<(Event, CalendarTaskResponseModel)>(deliverable.Count);
         foreach (var task in deliverable)
         {
-            if (!task.Status) continue;
+            if (!IsOnWorkerList(task)) continue;
 
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
             var comment = envelope?.EventComment?.Text ?? string.Empty;

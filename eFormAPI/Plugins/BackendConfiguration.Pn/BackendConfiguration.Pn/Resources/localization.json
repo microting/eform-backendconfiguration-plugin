@@ -12119,5 +12119,67 @@
       "el-GR": "Registered by",
       "is-IS": "Registered by"
     }
+  },
+  {
+    "Key": "TaskReminderStartsAt",
+    "LocalizedValue": {
+      "da": "Starter kl. {0}",
+      "de": "Beginnt um {0}",
+      "en-US": "Starts at {0}",
+      "uk-UA": "Початок о {0}",
+      "pl-PL": "Rozpoczyna się o {0}",
+      "no-NO": "Starter kl. {0}",
+      "sv-SE": "Börjar kl. {0}",
+      "es-ES": "Empieza a las {0}",
+      "fr-FR": "Commence à {0}",
+      "it-IT": "Inizia alle {0}",
+      "nl-NL": "Begint om {0}",
+      "pt-BR": "Começa às {0}",
+      "pt-PT": "Começa às {0}",
+      "fi-FI": "Alkaa klo {0}",
+      "et-ET": "Algab kell {0}",
+      "lv-LV": "Sākas plkst. {0}",
+      "lt-LT": "Prasideda {0}",
+      "ro-RO": "Începe la {0}",
+      "hr-HR": "Počinje u {0}",
+      "sl-SL": "Začne se ob {0}",
+      "cs-CZ": "Začíná v {0}",
+      "sk-SK": "Začína o {0}",
+      "hu-HU": "Kezdés: {0}",
+      "bg-BG": "Започва в {0}",
+      "el-GR": "Ξεκινά στις {0}",
+      "is-IS": "Hefst kl. {0}"
+    }
+  },
+  {
+    "Key": "TaskReminderUntitled",
+    "LocalizedValue": {
+      "da": "Opgave",
+      "de": "Aufgabe",
+      "en-US": "Task",
+      "uk-UA": "Завдання",
+      "pl-PL": "Zadanie",
+      "no-NO": "Oppgave",
+      "sv-SE": "Uppgift",
+      "es-ES": "Tarea",
+      "fr-FR": "Tâche",
+      "it-IT": "Attività",
+      "nl-NL": "Taak",
+      "pt-BR": "Tarefa",
+      "pt-PT": "Tarefa",
+      "fi-FI": "Tehtävä",
+      "et-ET": "Ülesanne",
+      "lv-LV": "Uzdevums",
+      "lt-LT": "Užduotis",
+      "ro-RO": "Sarcină",
+      "hr-HR": "Zadatak",
+      "sl-SL": "Naloga",
+      "cs-CZ": "Úkol",
+      "sk-SK": "Úloha",
+      "hu-HU": "Feladat",
+      "bg-BG": "Задача",
+      "el-GR": "Εργασία",
+      "is-IS": "Verkefni"
+    }
   }
 ]

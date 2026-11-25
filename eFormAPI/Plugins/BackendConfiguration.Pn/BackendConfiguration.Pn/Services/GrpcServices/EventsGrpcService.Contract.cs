@@ -59,7 +59,10 @@ public partial class EventsGrpcService
         "list_changes",
         // Outside the proto (SignalR hub at Hubs.LiveHubContract.HubPath on
         // the web origin), so contract_version stays 2.
-        Hubs.LiveHubContract.Capability
+        Hubs.LiveHubContract.Capability,
+        // Task reminders (package 12): opt in with RegisterPushToken.task_reminders; the
+        // payloads are in docs/task-reminders-contract.md. Outside the proto's version too.
+        TaskReminders.TaskReminderContract.Capability
     ];
 
     /// <summary>
