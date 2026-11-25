@@ -839,7 +839,7 @@ public sealed class TaskReminderPlanner(
     {
         var key = DayKeyOf(day);
         return tasks
-            .Where(t => t.TaskDate == key && !t.IsAllDay && !t.Completed)
+            .Where(t => EventsGrpcService.IsOnWorkerList(t) && t.TaskDate == key && !t.IsAllDay && !t.Completed)
             .Select(t =>
             {
                 var minutes = (int)Math.Round(t.StartHour * 60) % (24 * 60);

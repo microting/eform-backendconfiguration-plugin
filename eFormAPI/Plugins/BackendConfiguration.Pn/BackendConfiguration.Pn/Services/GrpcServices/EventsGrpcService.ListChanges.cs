@@ -62,6 +62,13 @@ public partial class EventsGrpcService
     /// hydrated per occurrence, diffed against the cursor.
     /// </summary>
     /// <summary>
+    /// Whether a calendar row of <see cref="WorkerTaskListRequest"/> is on the worker's list: an active
+    /// task (a deactivated series still has compliance-backed rows). One predicate for ListEvents,
+    /// GetEvent, ListChanges and the task reminder planner.
+    /// </summary>
+    internal static bool IsOnWorkerList(CalendarTaskResponseModel task) => task.Status;
+
+    /// <summary>
     /// The calendar read behind a worker's task list (ListEvents, ListChanges, and the task reminder
     /// planner, which must see exactly what the app lists): one property, a day window, only the
     /// tasks assigned to the worker's own site (#931), actionable rows only, titles in the worker's
@@ -404,7 +411,7 @@ public partial class EventsGrpcService
     /// <summary>Rows that are served: active, dated inside the window, once per wire key.</summary>
     private static List<CalendarTaskResponseModel> Served(
         IEnumerable<CalendarTaskResponseModel> rows, DateOnly from, DateOnly to) =>
-        rows.Where(r => r.Status && IsInWindow(r.TaskDate, from, to))
+        rows.Where(r => IsOnWorkerList(r) && IsInWindow(r.TaskDate, from, to))
             .DistinctBy(r => (r.Id, r.TaskDate, r.ComplianceId ?? 0))
             .ToList();
 

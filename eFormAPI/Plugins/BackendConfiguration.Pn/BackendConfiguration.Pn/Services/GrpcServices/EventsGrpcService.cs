@@ -279,7 +279,7 @@ public partial class EventsGrpcService(
         var decorated = new List<(Event, CalendarTaskResponseModel)>(deliverable.Count);
         foreach (var task in deliverable)
         {
-            if (!task.Status) continue;
+            if (!IsOnWorkerList(task)) continue;
 
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
 
@@ -1175,7 +1175,7 @@ public partial class EventsGrpcService(
         var decorated = new List<(Event, CalendarTaskResponseModel)>(deliverable.Count);
         foreach (var task in deliverable)
         {
-            if (!task.Status) continue;
+            if (!IsOnWorkerList(task)) continue;
 
             envelopeByTaskId.TryGetValue(task.Id, out var envelope);
             var comment = envelope?.EventComment?.Text ?? string.Empty;

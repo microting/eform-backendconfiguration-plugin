@@ -853,6 +853,30 @@ public class TaskReminderPlannerTests : TestBaseSetup
         Assert.That(await RowsAsync(w), Has.Count.EqualTo(1), "planning resumed");
     }
 
+    [Test]
+    public async Task DeactivatingTasks_CancelsAPendingReminder_AndWithdrawsASentOne()
+    {
+        // Copilot (PR #1530, round 2): an inactive task (Status false) is not on the app's list.
+        var w = await SeedWorldAsync();
+        var sent = await SeedDailySeriesAsync(w, 9.0, "Sent");
+        var pending = await SeedDailySeriesAsync(w, 11.0, "Pending");
+        using var host = NewHost(w);
+        using var planner = NewPlanner(host);
+        await planner.PlanPropertyAsync(w.PropertyId, CancellationToken.None);
+        await SetStateAsync((await RowsAsync(w)).Single(r => r.AreaRulePlanningId == sent.ArpId).Id, TaskNotificationState.Sent);
+        await using (var db = CreateFreshBackendConfigurationDbContext())
+        {
+            var ids = new[] { sent.ArpId, pending.ArpId };
+            await db.AreaRulePlannings.Where(a => ids.Contains(a.Id)).ExecuteUpdateAsync(u => u.SetProperty(a => a.Status, false));
+        }
+
+        await planner.PlanPropertyAsync(w.PropertyId, CancellationToken.None);
+
+        var rows = await RowsAsync(w);
+        Assert.That(rows.Single(r => r.AreaRulePlanningId == sent.ArpId).State, Is.EqualTo(TaskNotificationState.WithdrawPending));
+        Assert.That(rows.Single(r => r.AreaRulePlanningId == pending.ArpId).State, Is.EqualTo(TaskNotificationState.Cancelled));
+    }
+
     private sealed class CountingCommands : Microsoft.EntityFrameworkCore.Diagnostics.DbCommandInterceptor
     {
         private int _count;

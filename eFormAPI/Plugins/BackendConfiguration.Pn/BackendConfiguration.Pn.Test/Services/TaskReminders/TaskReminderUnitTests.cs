@@ -80,8 +80,25 @@ public class TaskReminderUnitTests
     // ------------------------------------------------------------------ selection
 
     private static CalendarTaskResponseModel Task(int id, string day, double hour, bool allDay = false, bool completed = false,
-        int? complianceId = null, string title = "T") =>
-        new() { Id = id, TaskDate = day, StartHour = hour, IsAllDay = allDay, Completed = completed, ComplianceId = complianceId, Title = title };
+        int? complianceId = null, string title = "T", bool active = true) =>
+        new()
+        {
+            Id = id, TaskDate = day, StartHour = hour, IsAllDay = allDay, Completed = completed, ComplianceId = complianceId,
+            Title = title, Status = active
+        };
+
+    [Test]
+    public void Candidates_ExcludeInactiveTasks_LikeTheAppsList()
+    {
+        // GetTasksForWeek also returns compliance-backed rows of a deactivated series; ListEvents and
+        // ListChanges do not serve them (Status false), so no reminder either.
+        var tasks = new[] { Task(1, "2027-03-28", 9.0, active: false), Task(2, "2027-03-28", 10.0) };
+
+        Assert.That(TaskReminderPlanner.Candidates(tasks, new DateOnly(2027, 3, 28), Copenhagen).Select(c => c.EventId),
+            Is.EqualTo(new[] { 2 }));
+        Assert.That(BackendConfiguration.Pn.Services.GrpcServices.EventsGrpcService.IsOnWorkerList(tasks[0]), Is.False);
+        Assert.That(BackendConfiguration.Pn.Services.GrpcServices.EventsGrpcService.IsOnWorkerList(tasks[1]), Is.True);
+    }
 
     [Test]
     public void Candidates_AreTheOpenTimedTasksOfTheDay()
